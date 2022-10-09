@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm';
 import { Restaurant } from './restaurants.entity';
 
-export const restaurantsProvider = [
+export const restaurantsProviders = [
   {
     provide: 'RESTAURANTS_REPOSITORY',
     useFactory: (dataSource: DataSource) =>
