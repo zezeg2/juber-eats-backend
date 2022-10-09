@@ -5,6 +5,8 @@ import { RestaurantsModule } from './restaurant/restaurants.module';
 import { DatabaseModule } from './database/database.module';
 import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 
 @Module({
   imports: [
@@ -13,12 +15,12 @@ import * as Joi from 'joi';
       envFilePath: process.env.NODE_ENV === 'dev' ? '.env.dev' : '.env.test',
       ignoreEnvFile: process.env.NODE_ENV === 'prod',
       validationSchema: Joi.object({
-        NODE_ENV: Joi.string().valid('dev', 'test', 'prod'),
-        // DB_HOST: Joi.string().required(),
-        // DB_PORT: Joi.string().required(),
-        // DB_USERNAME: Joi.string().required(),
-        // DB_PASSWORD: Joi.string().required(),
-        // DB_NAME: Joi.string().required(),
+        NODE_ENV: Joi.string().valid('dev', 'test', 'prod').required(),
+        DB_HOST: Joi.string().required(),
+        DB_PORT: Joi.string().required(),
+        DB_USERNAME: Joi.string().required(),
+        DB_PASSWORD: Joi.string().required(),
+        DB_NAME: Joi.string().required(),
       }),
     }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
@@ -26,8 +28,8 @@ import * as Joi from 'joi';
       // autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       autoSchemaFile: true,
     }),
-    DatabaseModule,
     RestaurantsModule,
+    DatabaseModule,
   ],
   controllers: [],
   providers: [],
