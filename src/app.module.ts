@@ -4,6 +4,8 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { RestaurantsModule } from './restaurant/restaurants.module';
 import { DatabaseModule } from './database/database.module';
 import { ConfigModule } from '@nestjs/config';
+import { UsersModule } from './users/users.module';
+import { CommonModule } from './common/common.module';
 import * as Joi from 'joi';
 
 @Module({
@@ -28,6 +30,8 @@ import * as Joi from 'joi';
     }),
     RestaurantsModule,
     DatabaseModule,
+    UsersModule,
+    CommonModule,
   ],
   controllers: [],
   providers: [],
