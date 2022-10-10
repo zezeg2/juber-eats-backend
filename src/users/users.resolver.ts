@@ -5,12 +5,14 @@ import {
   CreateAccountInput,
   CreateAccountOutput,
 } from './dtos/create-account.dto';
+import { LoginInput, LoginOutput } from './dtos/login.dto';
+import { InternalServerErrorException } from '@nestjs/common';
 
 @Resolver(() => User)
 export class UsersResolver {
   constructor(private readonly usersService: UsersService) {}
 
-  @Query(() => Boolean)
+  @Query(() => User)
   async findOne(@Args('email') email: string): Promise<User> {
     return await this.usersService.findOne(email);
   }
@@ -26,6 +28,15 @@ export class UsersResolver {
         isOK: false,
         error: error,
       };
+    }
+  }
+
+  @Mutation(() => LoginOutput)
+  async login(@Args('input') loginInput: LoginInput): Promise<LoginOutput> {
+    try {
+      return await this.usersService.login(loginInput);
+    } catch (error) {
+      throw new InternalServerErrorException();
     }
   }
 }
