@@ -34,7 +34,6 @@ import { JwtModule } from './jwt/jwt.module';
     DatabaseModule,
     UsersModule,
     CommonModule,
-    JwtModule,
   ],
   controllers: [],
   providers: [],
