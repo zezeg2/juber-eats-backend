@@ -6,6 +6,7 @@ import { DatabaseModule } from './database/database.module';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
 import { CommonModule } from './common/common.module';
+import { JwtModule } from './jwt/jwt.module';
 import * as Joi from 'joi';
 
 @Module({
@@ -21,6 +22,7 @@ import * as Joi from 'joi';
         DB_USERNAME: Joi.string().required(),
         DB_PASSWORD: Joi.string().required(),
         DB_NAME: Joi.string().required(),
+        SECRET_KEY: Joi.string().required(),
       }),
     }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
@@ -32,6 +34,7 @@ import * as Joi from 'joi';
     DatabaseModule,
     UsersModule,
     CommonModule,
+    JwtModule,
   ],
   controllers: [],
   providers: [],
