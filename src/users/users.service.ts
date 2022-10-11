@@ -73,7 +73,10 @@ export class UsersService {
 
   // 강의에서는 object 로 인풋을 받을때 input 필드중 하나라도 빠질 시 해당 값이 undefined 값이 설정되어 Exception 발생 (typeorm repository 의 update 메서드에서 예외 발생시킴),
   // 내 코드에는 같은방법으로 필드값을 update 메서드에 전달했지만 잘 실행 됨, 업데이트 된듯?
-  async editProfile(userId: number, { email, password }: EditProfileInput) {
+  async editProfile(
+    userId: number,
+    { email, password }: EditProfileInput,
+  ): Promise<User> {
     /**
      * update() 쿼리 문제점 :
      * password 를 변경할때 문제가 발생하는데, password 를 해시하여 db에 저장하는것이 올바른 로직이지만 @BeforeUpdate() decorator 를 사용해도 User Entity의 hashPassword 메서드가
@@ -82,10 +85,15 @@ export class UsersService {
      *
      */
 
-    return await this.usersRepository.update(
-      { id: userId },
-      { email, password },
-    );
+    // return await this.usersRepository.update(
+    //   { id: userId },
+    //   { email, password },
+    // );
+
+    const user = await this.findById(userId);
+    if (email) user.email = email;
+    if (password) user.password = password;
+    return this.usersRepository.save(user);
   }
 
   // async editProfile(userId: number, editProfileInput: EditProfileInput) {
