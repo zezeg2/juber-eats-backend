@@ -10,6 +10,7 @@ import { InternalServerErrorException, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../auth/auth.guard';
 import { AuthUser } from '../auth/auth-user.decorator';
 import { UserProfileInput, UserProfileOutput } from './dtos/user.profile.dto';
+import { EditProfileInput, EditProfileOutput } from './dtos/edit-profile.dto';
 
 @Resolver(() => User)
 export class UsersResolver {
@@ -66,6 +67,22 @@ export class UsersResolver {
         isOK: false,
         error: 'Not Found User',
       };
+    }
+  }
+
+  @UseGuards(AuthGuard)
+  @Mutation(() => EditProfileOutput)
+  async editProfile(
+    @AuthUser() authUser: User,
+    @Args('input') editProfileInput: EditProfileInput,
+  ): Promise<EditProfileOutput> {
+    try {
+      await this.usersService.editProfile(authUser.id, editProfileInput);
+      return {
+        isOK: true,
+      };
+    } catch (error) {
+      return { isOK: false, error };
     }
   }
 }
