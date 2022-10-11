@@ -1,4 +1,9 @@
-import { Module } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { RestaurantsModule } from './restaurant/restaurants.module';
@@ -8,6 +13,7 @@ import { UsersModule } from './users/users.module';
 import { CommonModule } from './common/common.module';
 import * as Joi from 'joi';
 import { JwtModule } from './jwt/jwt.module';
+import { JwtMiddleware } from './jwt/jwt.middleware';
 
 @Module({
   imports: [
@@ -29,6 +35,7 @@ import { JwtModule } from './jwt/jwt.module';
       driver: ApolloDriver,
       // autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       autoSchemaFile: true,
+      context: ({ req }) => ({ user: req['user'] }),
     }),
     RestaurantsModule,
     DatabaseModule,
@@ -41,4 +48,11 @@ import { JwtModule } from './jwt/jwt.module';
   controllers: [],
   providers: [],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): any {
+    consumer
+      .apply(JwtMiddleware) //.exclude()
+      .forRoutes({ path: '*', method: RequestMethod.ALL });
+  }
+  // export class AppModule {}
+}

@@ -65,9 +65,7 @@ export class UsersService {
     } catch (error) {}
   }
 
-  async findOne(email: string): Promise<User> {
-    const exists = await this.usersRepository.findOne({ where: { email } });
-    console.log(exists);
-    return exists;
+  async findById(id: number): Promise<User> {
+    return await this.usersRepository.findOne({ where: { id } });
   }
 }

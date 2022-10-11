@@ -1,5 +1,5 @@
 import { User } from './entities/users.entity';
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { UsersService } from './users.service';
 import {
   CreateAccountInput,
@@ -13,8 +13,8 @@ export class UsersResolver {
   constructor(private readonly usersService: UsersService) {}
 
   @Query(() => User)
-  async findOne(@Args('email') email: string): Promise<User> {
-    return await this.usersService.findOne(email);
+  async findOne(@Args('email') id: number): Promise<User> {
+    return await this.usersService.findById(id);
   }
 
   @Mutation(() => CreateAccountOutput)
@@ -38,5 +38,11 @@ export class UsersResolver {
     } catch (error) {
       throw new InternalServerErrorException();
     }
+  }
+
+  @Query(() => User)
+  me(@Context() context) {
+    if (!context.user) return;
+    return context.user;
   }
 }
