@@ -13,6 +13,7 @@ import { UsersModule } from './users/users.module';
 import * as Joi from 'joi';
 import { JwtModule } from './jwt/jwt.module';
 import { JwtMiddleware } from './jwt/jwt.middleware';
+import { join } from 'path';
 
 @Module({
   imports: [

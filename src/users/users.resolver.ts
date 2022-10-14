@@ -17,7 +17,7 @@ export class UsersResolver {
   constructor(private readonly usersService: UsersService) {}
 
   @Query(() => User)
-  async findOne(@Args('email') id: number): Promise<User> {
+  async findOne(@Args('id') id: number): Promise<User> {
     return await this.usersService.findById(id);
   }
 
