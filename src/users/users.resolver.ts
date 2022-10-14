@@ -27,49 +27,26 @@ export class UsersResolver {
   async createAccount(
     @Args('input') createAccountInput: CreateAccountInput,
   ): Promise<CreateAccountOutput> {
-    try {
-      return await this.usersService.createAccount(createAccountInput);
-    } catch (error) {
-      return {
-        isOK: false,
-        error: error,
-      };
-    }
+    return await this.usersService.createAccount(createAccountInput);
   }
 
   @Mutation(() => LoginOutput)
   async login(@Args('input') loginInput: LoginInput): Promise<LoginOutput> {
-    try {
-      return await this.usersService.login(loginInput);
-    } catch (error) {
-      throw new InternalServerErrorException();
-    }
-  }
-
-  @Query(() => User)
-  @UseGuards(AuthGuard)
-  me(@AuthUser() authUser: User) {
-    return authUser;
+    return await this.usersService.login(loginInput);
   }
 
   @Query(() => UserProfileOutput)
   @UseGuards(AuthGuard)
-  async userProfile(
+  getLoginUserProfile(@AuthUser() authUser: User): UserProfileOutput {
+    return { isOK: true, user: authUser };
+  }
+
+  @Query(() => UserProfileOutput)
+  @UseGuards(AuthGuard)
+  async getUserProfile(
     @Args() userProfileInput: UserProfileInput,
   ): Promise<UserProfileOutput> {
-    try {
-      const user = await this.usersService.findById(userProfileInput.userId);
-      if (!user) throw Error();
-      return {
-        isOK: Boolean(user),
-        user,
-      };
-    } catch (error) {
-      return {
-        isOK: false,
-        error: 'Not Found User',
-      };
-    }
+    return this.usersService.getUserProfile(userProfileInput);
   }
 
   @UseGuards(AuthGuard)
@@ -78,29 +55,13 @@ export class UsersResolver {
     @AuthUser() authUser: User,
     @Args('input') editProfileInput: EditProfileInput,
   ): Promise<EditProfileOutput> {
-    try {
-      const updated = await this.usersService.editProfile(
-        authUser.id,
-        editProfileInput,
-      );
-      if (!updated) throw new Error('Fail to Update Profile');
-      return {
-        isOK: true,
-        user: updated,
-      };
-    } catch (error) {
-      return { isOK: false, error };
-    }
+    return this.usersService.editProfile(authUser.id, editProfileInput);
   }
 
   @Mutation(() => VerifyEmailOutput)
   async verifyEmail(
     @Args('input') { code }: VerifyEmailInput,
   ): Promise<VerifyEmailOutput> {
-    try {
-      return { isOK: await this.usersService.verifyEmail(code) };
-    } catch (error) {
-      return { isOK: false, error };
-    }
+    return await this.usersService.verifyEmail(code);
   }
 }

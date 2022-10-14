@@ -9,9 +9,11 @@ import { LoginInput, LoginOutput } from './dtos/login.dto';
 import * as jwt from 'jsonwebtoken';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '../jwt/jwt.service';
-import { EditProfileInput } from './dtos/edit-profile.dto';
+import { EditProfileInput, EditProfileOutput } from './dtos/edit-profile.dto';
 import { log } from 'util';
 import { Verification } from './entities/verification.entity';
+import { UserProfileInput } from './dtos/user.profile.dto';
+import { VerifyEmailOutput } from './dtos/verify-email.dto';
 
 @Injectable()
 export class UsersService {
@@ -23,6 +25,10 @@ export class UsersService {
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
   ) {}
+
+  async findById(id: number): Promise<User> {
+    return await this.usersRepository.findOne({ where: { id } });
+  }
 
   async createAccount({
     email,
@@ -49,13 +55,9 @@ export class UsersService {
     } catch (e) {
       return { isOK: false, error: "Couldn't create account" };
     }
-    // hash the password
   }
 
   async login({ email, password }: LoginInput): Promise<LoginOutput> {
-    // find user with email
-    // check if the password is correct
-    // make a JWT and give it to user
     try {
       const user = await this.usersRepository.findOne({
         where: { email },
@@ -80,49 +82,44 @@ export class UsersService {
     } catch (error) {}
   }
 
-  async findById(id: number): Promise<User> {
-    return await this.usersRepository.findOne({ where: { id } });
+  async getUserProfile(userProfileInput: UserProfileInput) {
+    try {
+      const user = await this.findById(userProfileInput.userId);
+      if (!user) throw Error("Not Found User'");
+      return {
+        isOK: Boolean(user),
+        user,
+      };
+    } catch (error) {
+      return {
+        isOK: false,
+        error: error.message,
+      };
+    }
   }
 
-  // 강의에서는 object 로 인풋을 받을때 input 필드중 하나라도 빠질 시 해당 값이 undefined 값이 설정되어 Exception 발생 (typeorm repository 의 update 메서드에서 예외 발생시킴),
-  // 내 코드에는 같은방법으로 필드값을 update 메서드에 전달했지만 잘 실행 됨, 업데이트 된듯?
   async editProfile(
     userId: number,
     { email, password }: EditProfileInput,
-  ): Promise<User> {
-    /**
-     * update() 쿼리 문제점 :
-     * password 를 변경할때 문제가 발생하는데, password 를 해시하여 db에 저장하는것이 올바른 로직이지만 @BeforeUpdate() decorator 를 사용해도 User Entity의 hashPassword 메서드가
-     * 실행되지 않는다. 이는 update() 메서드가 Entity 가 존재하는지 확인하지 않고 db에 직접적으로 쿼리를 날릴 뿐이기 때문이다. 다시 말해 Entity 를 찾고 그 인스턴스에서 메서드를 실행시키지 않기떄문에
-     * 데코레이터가 무시된다고 할 수 있다.
-     *
-     */
-
-    // return await this.usersRepository.update(
-    //   { id: userId },
-    //   { email, password },
-    // );
-
-    const user = await this.findById(userId);
-    if (email) {
-      user.email = email;
-      user.verified = false;
-      await this.verificationRepository.save(
-        this.verificationRepository.create({ user }),
-      );
+  ): Promise<EditProfileOutput> {
+    try {
+      const user = await this.findById(userId);
+      if (!user) throw new Error('Not Found User');
+      if (email) {
+        user.email = email;
+        user.verified = false;
+        await this.verificationRepository.save(
+          this.verificationRepository.create({ user }),
+        );
+      }
+      if (password) user.password = password;
+      return { isOK: true, user: await this.usersRepository.save(user) };
+    } catch (error) {
+      return { isOK: false, error };
     }
-    if (password) user.password = password;
-    return this.usersRepository.save(user);
   }
 
-  // async editProfile(userId: number, editProfileInput: EditProfileInput) {
-  //   return await this.usersRepository.update(
-  //     { id: userId },
-  //     { ...editProfileInput },
-  //   );
-  // }
-
-  async verifyEmail(code: string): Promise<boolean> {
+  async verifyEmail(code: string): Promise<VerifyEmailOutput> {
     try {
       const verification = await this.verificationRepository.findOne({
         where: { code },
@@ -131,10 +128,12 @@ export class UsersService {
       if (verification) {
         verification.user.verified = true;
         await this.usersRepository.save(verification.user);
+        await this.verificationRepository.delete(verification.id);
+        return { isOK: true };
       }
-      return true;
+      return { isOK: false, error: 'Verification not found' };
     } catch (error) {
-      return false;
+      return { isOK: false, error };
     }
   }
 }
