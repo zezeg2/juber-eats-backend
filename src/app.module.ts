@@ -16,6 +16,9 @@ import { JwtMiddleware } from './jwt/jwt.middleware';
 import { join } from 'path';
 import { MailModule } from './mail/mail.module';
 import * as domain from 'domain';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { User } from './users/entities/users.entity';
+import { Verification } from './users/entities/verification.entity';
 
 @Module({
   imports: [
@@ -43,7 +46,18 @@ import * as domain from 'domain';
       context: ({ req }) => ({ user: req['user'] }),
     }),
     RestaurantsModule,
-    DatabaseModule,
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: process.env.DB_HOST,
+      port: +process.env.DB_PORT,
+      username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      logging: process.env.NODE_ENV !== 'production',
+      synchronize: process.env.NODE_ENV !== 'production',
+      // entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+      entities: [User, Verification],
+    }),
     UsersModule,
     JwtModule.forRoot({
       privateKey: process.env.PRIVATE_KEY,

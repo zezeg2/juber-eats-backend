@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { User } from './entities/users.entity';
 import {
@@ -6,24 +6,22 @@ import {
   CreateAccountOutput,
 } from './dtos/create-account.dto';
 import { LoginInput, LoginOutput } from './dtos/login.dto';
-import * as jwt from 'jsonwebtoken';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '../jwt/jwt.service';
 import { EditProfileInput, EditProfileOutput } from './dtos/edit-profile.dto';
-import { log } from 'util';
 import { Verification } from './entities/verification.entity';
 import { UserProfileInput } from './dtos/user.profile.dto';
 import { VerifyEmailOutput } from './dtos/verify-email.dto';
 import { MailService } from '../mail/mail.service';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class UsersService {
   constructor(
-    @Inject('USERS_REPOSITORY')
+    @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
-    @Inject('VERIFICATION_REPOSITORY')
+    @InjectRepository(Verification)
     private readonly verificationRepository: Repository<Verification>,
-    private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
   ) {}
@@ -31,7 +29,6 @@ export class UsersService {
   async findById(id: number): Promise<User> {
     return await this.usersRepository.findOne({ where: { id } });
   }
-
   async createAccount({
     email,
     password,
