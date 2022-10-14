@@ -1,5 +1,5 @@
 import { User } from './entities/users.entity';
-import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { UsersService } from './users.service';
 import {
   CreateAccountInput,
@@ -11,6 +11,8 @@ import { AuthGuard } from '../auth/auth.guard';
 import { AuthUser } from '../auth/auth-user.decorator';
 import { UserProfileInput, UserProfileOutput } from './dtos/user.profile.dto';
 import { EditProfileInput, EditProfileOutput } from './dtos/edit-profile.dto';
+
+import { VerifyEmailInput, VerifyEmailOutput } from './dtos/verify-email.dto';
 
 @Resolver(() => User)
 export class UsersResolver {
@@ -86,6 +88,17 @@ export class UsersResolver {
         isOK: true,
         user: updated,
       };
+    } catch (error) {
+      return { isOK: false, error };
+    }
+  }
+
+  @Mutation(() => VerifyEmailOutput)
+  async verifyEmail(
+    @Args('input') { code }: VerifyEmailInput,
+  ): Promise<VerifyEmailOutput> {
+    try {
+      return { isOK: await this.usersService.verifyEmail(code) };
     } catch (error) {
       return { isOK: false, error };
     }

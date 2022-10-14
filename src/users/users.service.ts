@@ -11,15 +11,19 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '../jwt/jwt.service';
 import { EditProfileInput } from './dtos/edit-profile.dto';
 import { log } from 'util';
+import { Verification } from './entities/verification.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @Inject('USERS_REPOSITORY')
     private readonly usersRepository: Repository<User>,
+    @Inject('VERIFICATION_REPOSITORY')
+    private readonly verificationRepository: Repository<Verification>,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
   ) {}
+
   async createAccount({
     email,
     password,
@@ -33,8 +37,13 @@ export class UsersService {
           error: 'There is a user with that email already',
         };
       }
-      await this.usersRepository.save(
+      const user = await this.usersRepository.save(
         this.usersRepository.create({ email, password, role }),
+      );
+      await this.verificationRepository.save(
+        this.verificationRepository.create({
+          user,
+        }),
       );
       return { isOK: true };
     } catch (e) {
@@ -48,7 +57,10 @@ export class UsersService {
     // check if the password is correct
     // make a JWT and give it to user
     try {
-      const user = await this.usersRepository.findOne({ where: { email } });
+      const user = await this.usersRepository.findOne({
+        where: { email },
+        select: ['id', 'password'],
+      });
       if (!user)
         return {
           isOK: false,
@@ -59,6 +71,7 @@ export class UsersService {
           isOK: false,
           error: 'Wrong Password',
         };
+      console.log(user);
       const token = this.jwtService.sign(user.id);
       return {
         isOK: true,
@@ -91,7 +104,13 @@ export class UsersService {
     // );
 
     const user = await this.findById(userId);
-    if (email) user.email = email;
+    if (email) {
+      user.email = email;
+      user.verified = false;
+      await this.verificationRepository.save(
+        this.verificationRepository.create({ user }),
+      );
+    }
     if (password) user.password = password;
     return this.usersRepository.save(user);
   }
@@ -102,4 +121,20 @@ export class UsersService {
   //     { ...editProfileInput },
   //   );
   // }
+
+  async verifyEmail(code: string): Promise<boolean> {
+    try {
+      const verification = await this.verificationRepository.findOne({
+        where: { code },
+        relations: ['user'],
+      });
+      if (verification) {
+        verification.user.verified = true;
+        await this.usersRepository.save(verification.user);
+      }
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
 }

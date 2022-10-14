@@ -1,7 +1,6 @@
-import { Column, Entity, JoinColumn, OneToOne } from 'typeorm';
+import { BeforeInsert, Column, Entity, JoinColumn, OneToOne } from 'typeorm';
 import { Field, InputType, ObjectType } from '@nestjs/graphql';
 import { CoreEntity } from '../../common/entities/core.entity';
-import { string } from 'joi';
 import { User } from './users.entity';
 
 @InputType({ isAbstract: true })
@@ -9,10 +8,15 @@ import { User } from './users.entity';
 @Entity()
 export class Verification extends CoreEntity {
   @Column()
-  @Field(() => string)
+  @Field(() => String)
   code: string;
 
-  @OneToOne((type) => User)
+  @OneToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn()
   user: User;
+
+  @BeforeInsert()
+  createCode(): void {
+    this.code = Math.random().toString(36);
+  }
 }
