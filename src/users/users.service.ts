@@ -14,6 +14,7 @@ import { log } from 'util';
 import { Verification } from './entities/verification.entity';
 import { UserProfileInput } from './dtos/user.profile.dto';
 import { VerifyEmailOutput } from './dtos/verify-email.dto';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class UsersService {
@@ -24,6 +25,7 @@ export class UsersService {
     private readonly verificationRepository: Repository<Verification>,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
+    private readonly mailService: MailService,
   ) {}
 
   async findById(id: number): Promise<User> {
@@ -46,11 +48,12 @@ export class UsersService {
       const user = await this.usersRepository.save(
         this.usersRepository.create({ email, password, role }),
       );
-      await this.verificationRepository.save(
+      const verification = await this.verificationRepository.save(
         this.verificationRepository.create({
           user,
         }),
       );
+      this.mailService.sendVerificationEmail(user.email, verification.code);
       return { isOK: true };
     } catch (e) {
       return { isOK: false, error: "Couldn't create account" };
@@ -108,9 +111,10 @@ export class UsersService {
       if (email) {
         user.email = email;
         user.verified = false;
-        await this.verificationRepository.save(
+        const verification = await this.verificationRepository.save(
           this.verificationRepository.create({ user }),
         );
+        this.mailService.sendVerificationEmail(user.email, verification.code);
       }
       if (password) user.password = password;
       return { isOK: true, user: await this.usersRepository.save(user) };
