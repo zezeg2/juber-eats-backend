@@ -7,7 +7,6 @@ import { Repository } from 'typeorm';
 import { Verification } from './entities/verification.entity';
 import { UsersService } from './users.service';
 import { User } from './entities/users.entity';
-import exp from 'constants';
 
 const mockRepository = () => ({
   findOne: jest.fn(),
