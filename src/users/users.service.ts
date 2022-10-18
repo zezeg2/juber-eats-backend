@@ -6,11 +6,10 @@ import {
   CreateAccountOutput,
 } from './dtos/create-account.dto';
 import { LoginInput, LoginOutput } from './dtos/login.dto';
-import { ConfigService } from '@nestjs/config';
 import { JwtService } from '../jwt/jwt.service';
 import { EditProfileInput, EditProfileOutput } from './dtos/edit-profile.dto';
 import { Verification } from './entities/verification.entity';
-import { UserProfileInput } from './dtos/user.profile.dto';
+import { UserProfileInput, UserProfileOutput } from './dtos/user.profile.dto';
 import { VerifyEmailOutput } from './dtos/verify-email.dto';
 import { MailService } from '../mail/mail.service';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -60,32 +59,25 @@ export class UsersService {
   async login({ email, password }: LoginInput): Promise<LoginOutput> {
     try {
       const user = await this.usersRepository.findOne({
-        where: { email },
         select: ['id', 'password'],
+        where: { email },
       });
-      if (!user)
-        return {
-          isOK: false,
-          error: 'Not Found User',
-        };
+      if (!user) return { isOK: false, error: 'Not Found User' };
       if (!(await user.checkPassword(password)))
-        return {
-          isOK: false,
-          error: 'Wrong Password',
-        };
-      console.log(user);
+        return { isOK: false, error: 'Wrong Password' };
       const token = this.jwtService.sign(user.id);
-      return {
-        isOK: true,
-        token,
-      };
-    } catch (error) {}
+      return { isOK: true, token };
+    } catch (error) {
+      return { isOK: false, error };
+    }
   }
 
-  async getUserProfile(userProfileInput: UserProfileInput) {
+  async getUserProfile(
+    userProfileInput: UserProfileInput,
+  ): Promise<UserProfileOutput> {
     try {
       const user = await this.findById(userProfileInput.userId);
-      if (!user) throw Error("Not Found User'");
+      if (!user) throw Error('Not Found User');
       return {
         isOK: Boolean(user),
         user,
@@ -103,8 +95,9 @@ export class UsersService {
     { email, password }: EditProfileInput,
   ): Promise<EditProfileOutput> {
     try {
-      const user = await this.findById(userId);
-      if (!user) throw new Error('Not Found User');
+      const user = await this.usersRepository.findOneOrFail({
+        where: { id: userId },
+      });
       if (email) {
         user.email = email;
         user.verified = false;
@@ -113,10 +106,13 @@ export class UsersService {
         );
         this.mailService.sendVerificationEmail(user.email, verification.code);
       }
-      if (password) user.password = password;
-      return { isOK: true, user: await this.usersRepository.save(user) };
+      if (password) {
+        user.password = password;
+        await this.usersRepository.save(user);
+        return { isOK: true };
+      }
     } catch (error) {
-      return { isOK: false, error };
+      return { isOK: false, error: 'Not Found User' };
     }
   }
 
@@ -134,7 +130,7 @@ export class UsersService {
       }
       return { isOK: false, error: 'Verification not found' };
     } catch (error) {
-      return { isOK: false, error };
+      return { isOK: false, error: 'Could not verify email' };
     }
   }
 }

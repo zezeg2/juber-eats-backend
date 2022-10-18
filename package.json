@@ -92,7 +92,7 @@
     "coveragePathIgnorePatterns": [
       "/node_modules/",
       ".entity.ts",
-      "constaants.ts"
+      ".constants.ts"
     ]
   }
 }
