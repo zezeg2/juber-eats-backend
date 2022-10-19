@@ -1,4 +1,6 @@
 import { DatabaseType, DataSource } from 'typeorm';
+import { User } from '../users/entities/users.entity';
+import { Verification } from '../users/entities/verification.entity';
 
 export const databaseProviders = [
   {
@@ -13,7 +15,8 @@ export const databaseProviders = [
         database: process.env.DB_NAME,
         logging: process.env.NODE_ENV !== 'production',
         synchronize: process.env.NODE_ENV !== 'production',
-        entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+        // entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+        entities: [User, Verification],
       });
 
       return dataSource.initialize();

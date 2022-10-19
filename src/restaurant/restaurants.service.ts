@@ -3,11 +3,12 @@ import { Restaurant } from './restaurants.entity';
 import { Repository } from 'typeorm';
 import { CreateRestaurantDto } from './dtos/create-restaurant.dto';
 import { UpdateRestaurantDto } from './dtos/update-restaurant.dto';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class RestaurantsService {
   constructor(
-    @Inject('RESTAURANTS_REPOSITORY')
+    @InjectRepository(Restaurant)
     private readonly restaurantRepository: Repository<Restaurant>,
   ) {}
   async findAll(): Promise<Restaurant[]> {

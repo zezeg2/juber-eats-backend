@@ -1,6 +1,7 @@
 import { Field, InputType, ObjectType } from '@nestjs/graphql';
 import { IsBoolean, IsOptional, IsString, Length } from 'class-validator';
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { BeforeInsert, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 
 @InputType({ isAbstract: true })
 @ObjectType()
