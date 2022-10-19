@@ -38,7 +38,7 @@ export class UsersResolver {
   @Query(() => UserProfileOutput)
   @UseGuards(AuthGuard)
   getLoginUserProfile(@AuthUser() authUser: User): UserProfileOutput {
-    return { isOK: true, user: authUser };
+    return { isOK: true, profile: authUser };
   }
 
   @Query(() => UserProfileOutput)

@@ -7,15 +7,12 @@ import {
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { RestaurantsModule } from './restaurant/restaurants.module';
-import { DatabaseModule } from './database/database.module';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
 import * as Joi from 'joi';
 import { JwtModule } from './jwt/jwt.module';
 import { JwtMiddleware } from './jwt/jwt.middleware';
-import { join } from 'path';
 import { MailModule } from './mail/mail.module';
-import * as domain from 'domain';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './users/entities/users.entity';
 import { Verification } from './users/entities/verification.entity';
@@ -53,8 +50,8 @@ import { Verification } from './users/entities/verification.entity';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      logging: process.env.NODE_ENV !== 'production',
-      synchronize: process.env.NODE_ENV !== 'production',
+      logging: process.env.NODE_ENV === 'dev',
+      synchronize: process.env.NODE_ENV !== 'prod',
       // entities: [__dirname + '/../**/*.entity{.ts,.js}'],
       entities: [User, Verification],
     }),
@@ -77,5 +74,4 @@ export class AppModule implements NestModule {
       .apply(JwtMiddleware) //.exclude()
       .forRoutes({ path: '*', method: RequestMethod.ALL });
   }
-  // export class AppModule {}
 }
