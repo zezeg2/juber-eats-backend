@@ -291,12 +291,80 @@ describe('UserModule (e2e)', () => {
               },
             },
           } = res;
-          console.log(isOK, error, email);
+          expect(isOK).toBe(true);
+          expect(error).toBe(null);
+          expect(email).toEqual(testUser.email);
+        });
+    });
+  });
+
+  describe('editProfile', () => {
+    it('should change email', () => {
+      const NEW_EMAIL = 'zezeg2@las.com';
+      return request(app.getHttpServer())
+        .post(GRAPHQL_ENDPOINT)
+        .set('X-JWT', jwtToken)
+        .send({
+          query: `
+            mutation{
+              editProfile(input : {
+                email : "${NEW_EMAIL}"
+              }) {
+                isOK
+                error
+              }
+            }
+            `,
+        })
+        .expect(200)
+        .expect((res) => {
+          const {
+            body: {
+              data: {
+                editProfile: { isOK, error },
+              },
+            },
+          } = res;
+          expect(isOK).toBe(true);
+          expect(error).toBe(null);
+        })
+        .then(() => {
+          return request(app.getHttpServer())
+            .post(GRAPHQL_ENDPOINT)
+            .set('X-JWT', jwtToken)
+            .send({
+              query: `
+        {
+          getLoginUserProfile{
+            isOK
+            error
+            profile{
+              email
+            }
+          }
+        }
+        `,
+            })
+            .expect(200)
+            .expect((res) => {
+              const {
+                body: {
+                  data: {
+                    getLoginUserProfile: {
+                      isOK,
+                      error,
+                      profile: { email },
+                    },
+                  },
+                },
+              } = res;
+              expect(isOK).toBe(true);
+              expect(error).toBe(null);
+              expect(email).toEqual(NEW_EMAIL);
+            });
         });
     });
   });
 
   it.todo('verifyEmail');
-
-  it.todo('editProfile');
 });
