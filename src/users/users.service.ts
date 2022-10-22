@@ -6,11 +6,9 @@ import {
   CreateAccountOutput,
 } from './dtos/create-account.dto';
 import { LoginInput, LoginOutput } from './dtos/login.dto';
-import * as jwt from 'jsonwebtoken';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '../jwt/jwt.service';
 import { EditProfileInput, EditProfileOutput } from './dtos/edit-profile.dto';
-import { log } from 'util';
 import { Verification } from './entities/verification.entity';
 import { UserProfileInput } from './dtos/user.profile.dto';
 import { VerifyEmailOutput } from './dtos/verify-email.dto';
