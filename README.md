@@ -68,6 +68,7 @@
 
 ### src 구조
 
+```
 ├── `app.module.ts`
 ├── common
 │   ├── common.constants.ts
@@ -104,3 +105,4 @@
     ├── users.providers.ts
     ├── users.resolver.ts
     └── users.service.ts
+```
