@@ -6,11 +6,9 @@ import {
   CreateAccountOutput,
 } from './dtos/create-account.dto';
 import { LoginInput, LoginOutput } from './dtos/login.dto';
-import * as jwt from 'jsonwebtoken';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '../jwt/jwt.service';
 import { EditProfileInput } from './dtos/edit-profile.dto';
-import { log } from 'util';
 
 @Injectable()
 export class UsersService {
@@ -48,7 +46,10 @@ export class UsersService {
     // check if the password is correct
     // make a JWT and give it to user
     try {
-      const user = await this.usersRepository.findOne({ where: { email } });
+      const user = await this.usersRepository.findOne({
+        select: ['id', 'password'],
+        where: { email },
+      });
       if (!user)
         return {
           isOK: false,
