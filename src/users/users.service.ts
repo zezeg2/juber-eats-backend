@@ -63,7 +63,12 @@ export class UsersService {
         isOK: true,
         token,
       };
-    } catch (error) {}
+    } catch (error) {
+      return {
+        isOK: false,
+        error: error.message,
+      };
+    }
   }
 
   async findOne(email: string): Promise<User> {

@@ -1,328 +1,308 @@
 # Juber Eats - uberEats Clone
-### 1. Setup NestJS Backend
+## User CRUD
 
-- Node LTS 버전 사용 (22.10.10 - v16.17.1)
+### 1. UserModule
 
-	```shell
-	npm i -g @nestjs/cli // nestjs-cli 글로벌 설치
-	```
+- nest-cli를 통해서 user module 및 service, resolver 생성
 
-- nest-cli를 통해 NestJS 프로젝트 생성
-
-	```shell
-	nest new project-name
-	```
-
-- 생성된 프로젝트의 루트 디렉터리에서 `npm install` 명령어로 패키지 및 종속성 설치
-
-### 2. Apollo Server Setup
-
-- 패키지 설치
-
-	``` shell
-	npm install @nestjs/graphql @nestjs/apollo graphql apollo-server-express     
-	```
-
-- AppModule에 `GraphQLModule`을 추가해주고 필요에 따른 옵션을 지정해준다.
-
-	``` javascript
-	GraphQLModule.forRoot<ApolloDriverConfig>({
-	  driver: ApolloDriver,
-	  autoSchemaFile: true, // true로 설정시 스키마파일을 메모리에 로드, Code First
-	  // 스키마 파일을 소스프로젝트 폴더에 저장시 아래와 같이 설정
-	  // autoSchemaFile: join(process.cwd(), 'src/schema.gql'), 
-	  debug: false, // default false
-	  playground: true, // default true, /graphql로 접속시 graphql 콘솔 활성화/ 비활성화
-	  // typePaths: ['./**/*.graphql'], Schema First
-	})
-	```
-
-- graphql파일을 작성하지 않고(Code First) 데코레이터를 이용하여 ObjectType, Resolver(Query, Mutation)을 작성한다 (Apollo Server를 실행하기 위해서는 Schema, Resolver를 생성해야한다)
-
-	> CodeFirst 접근방식에서 Schema를 생성하기 위해서는 Resolver가 있어야 한다
-
-	
-
-### 3. TypeORM Configuration
-
-- 패키지 설치 
-
-	```shell
-	npm install typeorm pg cross-env @nestjs/config Joi
-	```
-
-	- typeorm -> Data-Mapper ORM for TypeScript, ES7, ES6, ES5. Supports MySQL, PostgreSQL ...
-	- @nestjs/typeorm -> 이 패키지는 nestjs 전용 typeORM 패키지로, 사용하기 더 용이하다
-	- pg -> postgresql driver
-	- cross-env -> Run scripts that set and use environment variables across platforms
-	- @nestjs/config -> Configuration module for [Nest](https://github.com/nestjs/nest) based on the [dotenv](https://github.com/motdotla/dotenv)
-	- Joi -> Object schema validation
-
-- typeorm 패키지를 이용하여 데이터베이스 모듈을 생성하는 방식 사용 (더 간단하게 @nestjs/typeorm 패키지 사용 가능 https://docs.nestjs.com/techniques/database)
-
-- 데이터베이스 모듈 생성 `nest g module databases`
-
-- providers 생성
+- user entity 생성
 
 	```typescript
-	export const databaseProviders = [
-	  {
-	    provide: 'DATA_SOURCE',
-	    useFactory: async () => {
-	      const dataSource = new DataSource({
-	        type: 'postgres',
-	        host: process.env.DB_HOST,
-	        port: +process.env.DB_PORT,
-	        username: process.env.DB_USERNAME,
-	        password: process.env.DB_PASSWORD,
-	        database: process.env.DB_NAME,
-	        logging: process.env.NODE_ENV !== 'production',
-	        synchronize: process.env.NODE_ENV !== 'production',
-	        entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-	      });
+	enum UserRole {
+	  Owner,
+	  Client,
+	  Delivery,
+	}
 	
-	      return dataSource.initialize();
-	    },
-	  },
-	];
+	registerEnumType(UserRole, { name: 'UserRole' });
 	
-	```
-
-	``` typescript
-	@Module({
-	  providers: [...databaseProviders],
-	  exports: [...databaseProviders],
-	})
-	export class DatabaseModule {}
-	```
-
-	- 여기서 애플리케이션 실행 환경(production, developing, testing)에 따라 다른 환경변수를 사용하기 위해서 세가지 패키지를 사용하게 된다
-
-		1. @nestjs/config
-		2. cross-env
-		3. joi
-
-	- 프로젝트의 root dir 아래에 `.env.*` 형식으로 환경변수 파일 생성 ex).env.dev
-
-		```
-		DB_HOST=localhost
-		DB_PORT=5432
-		DB_USERNAME=jonghyeon
-		DB_PASSWORD=password
-		DB_NAME=juber-eats
-		```
-
-	- AppModule에 ConfigModule을 추가한다
-
-		```typescript
-		ConfigModule.forRoot({
-		  isGlobal: true,
-		  envFilePath: process.env.NODE_ENV === 'dev' ? '.env.dev' : '.env.test',
-		  ignoreEnvFile: process.env.NODE_ENV === 'prod',
-		  validationSchema: Joi.object({
-		    NODE_ENV: Joi.string().valid('dev', 'test', 'prod').required(),
-		    DB_HOST: Joi.string().required(),
-		    DB_PORT: Joi.string().required(),
-		    DB_USERNAME: Joi.string().required(),
-		    DB_PASSWORD: Joi.string().required(),
-		    DB_NAME: Joi.string().required(),
-		  }),
-		```
-
-	- package.json파일에서 scripts 를 수정한다, 즉 cross-env를 사용하여 `NODE_ENV`를 설정해준다.
-
-		```json
-		"scripts": {
-		  ...
-		  "start": "cross-env NODE_ENV=prod nest start",
-		  "start:dev": "cross-env NODE_ENV=dev nest start --watch",
-		  ...
-		  "test": "cross-env NODE_ENV=test jest",
-		  ...
-		},
-		```
-
-	- Joi 패키지를 다음 방법으로 임포트 한다. `import * as Joi from 'joi';`
-	- Joi 패키지를 통해 객체 유효성 검사를 한다.
-
-
-
-### 4. Restaurant 모듈 생성
-
-- 유효성 검사 패키지 설치 `npm install class-validator class-transformer`
-
-- restaurant 모듈 구조
-
-	```
-	├── dtos 
-	│   ├── create-restaurant.dto.ts
-	│   └── update-restaurant.dto.ts
-	├── restaurants.entity.ts
-	├── restaurants.module.ts
-	├── restaurants.providers.ts
-	├── restaurants.resolver.ts
-	└── restaurants.service.ts
-	```
-
-- entitiy : 데코레이터를 통해 typeORM의 Entity, Graphql의 ObjectType, InputType/ArgsType 으로 사용된다
-
-	> @InputType(): 모든 필드들이 포함된 하나의 객체
-	>
-	> @ArgsType() : 필드들을 분리된 하나의 argument로 정의할 수 있도록 한다.
-
-	```typescript
-	@InputType({ isAbstract: true }) // DTO
+	@InputType({ isAbstract: true })
 	@ObjectType()
 	@Entity()
-	export class Restaurant {
-	  @PrimaryGeneratedColumn() // generate id auto-increment
-	  @Field(() => Number)
-	  id: number;
-	
+	export class User extends CoreEntity {
+	  @Column()
 	  @Field(() => String)
-	  @IsString()
-	  @Length(5, 10)
-	  @Column()
-	  name: string;
+	  email: string;
 	
-	  @Field(() => Boolean, { nullable: true, defaultValue: false })
-	  @IsOptional()
-	  @IsBoolean()
 	  @Column()
-	  isVegan?: boolean;
-	
 	  @Field(() => String)
-	  @IsString()
-	  @Column()
-	  address: string;
+	  password: string;
 	
-	  @Field(() => String)
-	  @IsString()
-	  @Column()
-	  ownerName: string;
-	
-	  @Field(() => String)
-	  @IsString()
-	  @Column()
-	  categoryName: string;
-	
-	  @Field(() => String, { nullable: true, defaultValue: 'not-null' })
-	  @IsString()
-	  @Column()
-	  nullableTestFiled?: string;
+	  @Column({
+	    type: 'enum',
+	    enum: UserRole,
+	  })
+	  @Field(() => UserRole)
+	  @IsEnum(UserRole)
+	  role: UserRole;
 	}
 	```
 
-- DTOs - Mapped Type(OmitType, PickType, PartialType...) 사용, 즉 Restaurant 클래스(Entity)의 필드들을 매핑하여 DTO를 생성한다. 이 때 parentType인 Entity는 ObjectType으로 정의되어 있는데 Mapped Type을 사용하기 위해서는 parent가 InputType이어야 한다. 따라서 위의 Entity 코드에서 확인할 수 있듯이 `@InputType({ isAbstract: true }) ` 데코레이터를 명시해줘야 한다. -> 이는 InputType은 스키마에 포함되지 않고 어딘가에서 복사해서 쓰여짐을 의미한다. 
+	- role : enum type으로 생성
+
+### user CRUD 기본 요구사항
+
+- response 시 common output을 확장한 형식으로 응답
 
 	```typescript
-	@InputType() 
-	export class CreateRestaurantDto extends OmitType(Restaurant,['id'],// InputType) Dto(child)의 타입은 InputType, Restaurant(parent) 타입을 ObjectType 로 지정했기 때문에 세번째 인자에서 데코레이터 InputType 을 전달하여 변환해 준다.
-	) {}
-	
-	@InputType()
-	export class UpdateRestaurantInputType extends PartialType(
-	  CreateRestaurantDto,
-	) {}
-	
-	@ArgsType()
-	export class UpdateRestaurantDto {
-	  @Field(() => Number)
-	  id: number;
-	  @Field(() => UpdateRestaurantInputType)
-	  data: UpdateRestaurantInputType;
+	@ObjectType()
+	export class CoreOutput {
+	  @Field(() => Boolean)
+	  isOK: boolean;
+	  @Field(() => String, { nullable: true })
+	  error?: string;
 	}
 	```
 
-- Providers : repository provider -> DataSource를 통해 해당 모듈의 엔티티에 매핑된 Repository를 provide한다
+- findByEmail
 
-	```typescript
-	export const restaurantsProviders = [
-	  {
-	    provide: 'RESTAURANTS_REPOSITORY',
-	    useFactory: (dataSource: DataSource) =>
-	      dataSource.getRepository(Restaurant),
-	    inject: ['DATA_SOURCE'],
-	  },
-	];
+	- input properties : email
+	- output : User
+
+- createAccount
+
+	- input properties: email, password, role
+
+		```typescript
+		@InputType()
+		export class CreateAccountInput extends PickType(User, [
+		  'email',
+		  'password',
+		  'role',
+		]) {}
+		```
+
+	- output : 
+
+		```typescript
+		@ObjectType()
+		export class CreateAccountOutput extends CoreOutput {}
+		```
+
+	- execution cases
+
+		- case 1 : email이 중복되는 다른 사용자가 이미 있을경우 fail
+		- case 2 : 데이터 베이스 에러 등으로 런타임 에러 발생시 fail
+		- case 3 : 위의 경우들이 아닌 경우 success
+
+	- 유저 생성시(Insert) password를 해시화 하여 데이터베이스에 저장하기 위해 `bcrypt` 패키지 설치, 및 user entity에 `hashPassword()`메서드 추가
+
+		```typescript
+		...
+		import * as bcrypt from 'bcrypt';
+		...
+		
+		// typeorm decorator @BeforeInsert : insert query가 실행되기 전에 데코레이터 해당 데코레이터가 메서드를 실행한다
+		@BeforeInsert() 
+		async hashPassword(): Promise<void> {
+		  try {
+		    this.password = await bcrypt.hash(this.password, 10);
+		  } catch (error) {
+		    console.log(error);
+		    throw new InternalServerErrorException();
+		  }
+		}
+		```
+
+- login
+
+- - input properties: email, password
+
+		```typescript
+		@InputType()
+		export class LoginInput extends PickType(User, ['email', 'password']) {}
+		```
+
+	- output :
+
+		```typescript
+		@ObjectType()
+		export class LoginOutput extends MutationOutput {
+		  @Field(() => String, { nullable: true })
+		  token?: string;
+		}
+		```
+
+- - 로그인 시 데이터베이스에 해시화 되어 있는 password를 복호화 하여 대조후 로그인 로직 수행하기 위해 entity에 `checkPassword()`메서드 추가
+
+		```typescript
+		async checkPassword(inputPwd: string): Promise<boolean> {
+		  try {
+		    return await bcrypt.compare(inputPwd, this.password);
+		  } catch (error) {
+		    throw new InternalServerErrorException();
+		  }
+		}
+		```
+
+	- excution cases
+
+		- case1 : email의 user가 존재하지 않을 경우 fail
+		- case2 : email의 user가 존재하지만 checkPassword 결과 password가 일치하지 않을경우 fail
+		- case3 : 위의 경우를 제외한 runtime error 발생시 fail
+		- case4 : 위의 경우를 제외한 경우 success, jwt 토큰 발행하여 응답
+
+### src 구조 및 수정된 코드
+
+- 설치한 패키지: bcrypt, jsonwebtoken
+
+- src/
+
+	```shell
+	├── app.module.ts
+	├── common
+	│   ├── common.module.ts
+	│   ├── dtos
+	│   │   └── output.dto.ts
+	│   └── entities
+	│       └── core.entity.ts
+	├── database
+	│   ├── database.module.ts
+	│   └── database.providers.ts
+	├── main.ts
+	├── restaurant
+	│   ├── dtos
+	│   │   ├── create-restaurant.dto.ts
+	│   │   └── update-restaurant.dto.ts
+	│   ├── restaurants.entity.ts
+	│   ├── restaurants.module.ts
+	│   ├── restaurants.providers.ts
+	│   ├── restaurants.resolver.ts
+	│   └── restaurants.service.ts
+	└── users
+	    ├── dtos
+	    │   ├── create-account.dto.ts
+	    │   └── login.dto.ts
+	    ├── entities
+	    │   └── users.entity.ts
+	    ├── users.module.ts
+	    ├── users.providers.ts
+	    ├── users.resolver.ts
+	    └── users.service.ts
 	```
 
-- Service
-
-	- constructor를 통해 repository를 injection 하고 비즈니스 로직을 구성한다
+- users.service.ts
 
 	```typescript
+	import { Inject, Injectable } from '@nestjs/common';
+	import { Repository } from 'typeorm';
+	import { User } from './entities/users.entity';
+	import {
+	  CreateAccountInput,
+	  CreateAccountOutput,
+	} from './dtos/create-account.dto';
+	import { LoginInput, LoginOutput } from './dtos/login.dto';
+	import * as jwt from 'jsonwebtoken';
+	import { ConfigService } from '@nestjs/config';
+	
 	@Injectable()
-	export class RestaurantsService {
+	export class UsersService {
 	  constructor(
-	    @Inject('RESTAURANTS_REPOSITORY')
-	    private readonly restaurantRepository: Repository<Restaurant>,
+	    @Inject('USERS_REPOSITORY')
+	    private readonly usersRepository: Repository<User>,
+	    private readonly configService: ConfigService,
 	  ) {}
-	  async findAll(): Promise<Restaurant[]> {
-	    return this.restaurantRepository.find();
-	  }
-	  async createRestaurant(
-	    createRestaurantDto: CreateRestaurantDto,
-	  ): Promise<Restaurant> {
-	    const newRestaurant = this.restaurantRepository.create(createRestaurantDto);
-	    return this.restaurantRepository.save(newRestaurant);
+	  async createAccount({
+	    email,
+	    password,
+	    role,
+	  }: CreateAccountInput): Promise<CreateAccountOutput> {
+	    // check new user & create user
+	    try {
+	      if (await this.usersRepository.findOne({ where: { email } })) {
+	        return {
+	          isOK: false,
+	          error: 'There is a user with that email already',
+	        };
+	      }
+	      await this.usersRepository.save(
+	        this.usersRepository.create({ email, password, role }),
+	      );
+	      return { isOK: true };
+	    } catch (e) {
+	      return { isOK: false, error: "Couldn't create account" };
+	    }
+	    // hash the password
 	  }
 	
-	  async updateRestaurant({ id, data }: UpdateRestaurantDto) {
-	    return this.restaurantRepository.update(id, { ...data });
+	  async login({ email, password }: LoginInput): Promise<LoginOutput> {
+	    // find user with email
+	    // check if the password is correct
+	    // make a JWT and give it to user
+	    try {
+	      const user = await this.usersRepository.findOne({ where: { email } });
+	      if (!user)
+	        return {
+	          isOK: false,
+	          error: 'Not Found User',
+	        };
+	      if (!(await user.checkPassword(password)))
+	        return {
+	          isOK: false,
+	          error: 'Wrong Password',
+	        };
+	      const token = jwt.sign(
+	        { id: user.id },
+	        this.configService.get('SECRET_KEY'),
+	      );
+	      return {
+	        isOK: true,
+	        token,
+	      };
+	    } catch (error) {}
+	  }
+	
+	  async findOne(email: string): Promise<User> {
+	    const exists = await this.usersRepository.findOne({ where: { email } });
+	    console.log(exists);
+	    return exists;
 	  }
 	}
 	```
 
-- resolver 
-
-	- constructor를 통해 service를 injection 하고 서비스 로직을 수행한다.
+- users.resolver.ts
 
 	```typescript
-	@Resolver(() => Restaurant)
-	export class RestaurantsResolver {
-	  constructor(private readonly restaurantsService: RestaurantsService) {}
+	import { User } from './entities/users.entity';
+	import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+	import { UsersService } from './users.service';
+	import {
+	  CreateAccountInput,
+	  CreateAccountOutput,
+	} from './dtos/create-account.dto';
+	import { LoginInput, LoginOutput } from './dtos/login.dto';
+	import { InternalServerErrorException } from '@nestjs/common';
 	
-	  @Query(() => [Restaurant])
-	  restaurants(): Promise<Restaurant[]> {
-	    return this.restaurantsService.findAll();
+	@Resolver(() => User)
+	export class UsersResolver {
+	  constructor(private readonly usersService: UsersService) {}
+	
+	  @Query(() => User)
+	  async findOne(@Args('email') email: string): Promise<User> {
+	    return await this.usersService.findOne(email);
 	  }
 	
-	  @Mutation(() => Boolean)
-	  async createRestaurant(
-	    // @Args('createRestaurantDto') createRestaurantDto: CreateRestaurantDto,
-	    @Args('input') createRestaurantDto: CreateRestaurantDto,
-	  ): Promise<boolean> {
+	  @Mutation(() => CreateAccountOutput)
+	  async createAccount(
+	    @Args('input') createAccountInput: CreateAccountInput,
+	  ): Promise<CreateAccountOutput> {
 	    try {
-	      await this.restaurantsService.createRestaurant(createRestaurantDto);
-	      return true;
-	    } catch (e) {
-	      console.log(e);
-	      return false;
+	      return await this.usersService.createAccount(createAccountInput);
+	    } catch (error) {
+	      return {
+	        isOK: false,
+	        error: error,
+	      };
 	    }
 	  }
 	
-	  @Mutation(() => Boolean)
-	  async updateRestaurant(
-	    @Args() updateRestaurantDto: UpdateRestaurantDto,
-	  ): Promise<boolean> {
+	  @Mutation(() => LoginOutput)
+	  async login(@Args('input') loginInput: LoginInput): Promise<LoginOutput> {
 	    try {
-	      await this.restaurantsService.updateRestaurant(updateRestaurantDto);
-	      return true;
-	    } catch (e) {
-	      console.log(e);
-	      return false;
+	      return await this.usersService.login(loginInput);
+	    } catch (error) {
+	      throw new InternalServerErrorException();
 	    }
 	  }
 	}
-	```
-
-- module : import할 모듈 및 providers를 설정한다
-
-	```typescript
-	@Module({
-	  imports: [DatabaseModule],
-	  providers: [RestaurantsResolver, RestaurantsService, ...restaurantsProviders],
-	})
-	export class RestaurantsModule {}
 	```

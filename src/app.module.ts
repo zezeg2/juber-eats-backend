@@ -7,7 +7,6 @@ import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
 import { CommonModule } from './common/common.module';
 import * as Joi from 'joi';
-import { JwtModule } from './jwt/jwt.module';
 
 @Module({
   imports: [
