@@ -1,5 +1,5 @@
 /**
- * Guard : Function that choose if thr request go or not
+ * Guard : Function that choose if the request go or not
  * Guard 는 각기 다른 기능을 하는 Guard 를 다양하게 만들 수 있는 것이 장점.
  */
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
