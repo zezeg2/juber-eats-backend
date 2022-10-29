@@ -16,6 +16,8 @@ import { MailModule } from './mail/mail.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './users/entities/users.entity';
 import { Verification } from './users/entities/verification.entity';
+import { Restaurant } from './restaurant/entities/restaurants.entity';
+import { Category } from './restaurant/entities/category.entity';
 
 @Module({
   imports: [
@@ -53,7 +55,7 @@ import { Verification } from './users/entities/verification.entity';
       logging: process.env.NODE_ENV === 'dev',
       synchronize: process.env.NODE_ENV !== 'prod',
       // entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-      entities: [User, Verification],
+      entities: [User, Verification, Restaurant, Category],
     }),
     UsersModule,
     JwtModule.forRoot({

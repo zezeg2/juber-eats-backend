@@ -1,42 +1,28 @@
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { Restaurant } from './restaurants.entity';
-import { CreateRestaurantDto } from './dtos/create-restaurant.dto';
+import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { Restaurant } from './entities/restaurants.entity';
+import {
+  CreateRestaurantInput,
+  CreateRestaurantOutput,
+} from './dtos/create-restaurant.dto';
 import { RestaurantsService } from './restaurants.service';
-import { UpdateRestaurantDto } from './dtos/update-restaurant.dto';
+import { AuthUser } from '../auth/auth-user.decorator';
+import { User } from '../users/entities/users.entity';
+import { UseGuards } from '@nestjs/common';
+import { AuthGuard } from '../auth/auth.guard';
 
 @Resolver(() => Restaurant)
 export class RestaurantsResolver {
   constructor(private readonly restaurantsService: RestaurantsService) {}
 
-  @Query(() => [Restaurant])
-  restaurants(): Promise<Restaurant[]> {
-    return this.restaurantsService.findAll();
-  }
-
-  @Mutation(() => Boolean)
+  @Mutation(() => CreateRestaurantOutput)
+  @UseGuards(AuthGuard)
   async createRestaurant(
-    // @Args('createRestaurantDto') createRestaurantDto: CreateRestaurantDto,
-    @Args('input') createRestaurantDto: CreateRestaurantDto,
-  ): Promise<boolean> {
-    try {
-      await this.restaurantsService.createRestaurant(createRestaurantDto);
-      return true;
-    } catch (e) {
-      console.log(e);
-      return false;
-    }
-  }
-
-  @Mutation(() => Boolean)
-  async updateRestaurant(
-    @Args() updateRestaurantDto: UpdateRestaurantDto,
-  ): Promise<boolean> {
-    try {
-      await this.restaurantsService.updateRestaurant(updateRestaurantDto);
-      return true;
-    } catch (e) {
-      console.log(e);
-      return false;
-    }
+    @AuthUser() authUser: User,
+    @Args('input') createRestaurantInput: CreateRestaurantInput,
+  ): Promise<CreateRestaurantOutput> {
+    return await this.restaurantsService.createRestaurant(
+      authUser,
+      createRestaurantInput,
+    );
   }
 }

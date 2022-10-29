@@ -3,7 +3,7 @@ import { Field, InputType, ObjectType } from '@nestjs/graphql';
 import { CoreEntity } from '../../common/entities/core.entity';
 import { User } from './users.entity';
 
-@InputType({ isAbstract: true })
+@InputType('VerificationInputType', { isAbstract: true })
 @ObjectType()
 @Entity()
 export class Verification extends CoreEntity {
