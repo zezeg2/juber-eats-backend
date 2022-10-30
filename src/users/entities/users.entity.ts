@@ -12,9 +12,9 @@ import { IsBoolean, IsEmail, IsEnum, IsString, Length } from 'class-validator';
 import { Restaurant } from '../../restaurant/entities/restaurants.entity';
 
 export enum UserRole {
-  Owner,
-  Client,
-  Delivery,
+  Owner = 'Owner',
+  Client = 'Client',
+  Delivery = 'Delivery',
 }
 
 registerEnumType(UserRole, { name: 'UserRole' });
