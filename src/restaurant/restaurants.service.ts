@@ -17,6 +17,8 @@ import {
   DeleteRestaurantInput,
   DeleteRestaurantOutput,
 } from './dtos/delete-restaurant.dto';
+import { AllCategoriesOutput } from './dtos/all-categories.dto';
+import { GetCategoryInput, GetCategoryOutput } from './dtos/get-category.dto';
 
 @Injectable()
 export class RestaurantsService {
@@ -25,6 +27,7 @@ export class RestaurantsService {
     @InjectRepository(Restaurant)
     private readonly restaurantRepository: Repository<Restaurant>,
   ) {}
+
   async createRestaurant(
     owner: User,
     createRestaurantInput: CreateRestaurantInput,
@@ -91,7 +94,6 @@ export class RestaurantsService {
     try {
       const restaurant = await this.restaurantRepository.findOneOrFail({
         where: { id: deleteRestaurantInput.restaurantId },
-        // loadRelationIds: true,
       });
       if (owner.id !== restaurant.ownerId) {
         return {
@@ -106,6 +108,45 @@ export class RestaurantsService {
       return {
         isOK: false,
         error: 'Restaurant Not found',
+      };
+    }
+  }
+
+  async allCategories(): Promise<AllCategoriesOutput> {
+    try {
+      const categories = await CategoryRepository(this.dataSource).find();
+      return {
+        isOK: true,
+        categories,
+      };
+    } catch {
+      return {
+        isOK: false,
+        error: 'Cannot load categories',
+      };
+    }
+  }
+
+  countRestaurant(category: Category) {
+    return this.restaurantRepository.count({
+      where: { category: { id: category.id } },
+    });
+  }
+
+  async getCategoryBySlug({
+    slug,
+  }: GetCategoryInput): Promise<GetCategoryOutput> {
+    try {
+      return {
+        isOK: true,
+        category: await CategoryRepository(this.dataSource).findOneOrFail({
+          where: { slug },
+        }),
+      };
+    } catch {
+      return {
+        isOK: false,
+        error: 'Category Not found',
       };
     }
   }
