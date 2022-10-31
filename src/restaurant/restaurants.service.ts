@@ -18,7 +18,11 @@ import {
   DeleteRestaurantOutput,
 } from './dtos/delete-restaurant.dto';
 import { AllCategoriesOutput } from './dtos/all-categories.dto';
-import { GetCategoryInput, GetCategoryOutput } from './dtos/get-category.dto';
+import {
+  GetCategoryInput,
+  GetCategoryOutput,
+  PAGINATION_SIZE,
+} from './dtos/get-category.dto';
 
 @Injectable()
 export class RestaurantsService {
@@ -135,13 +139,23 @@ export class RestaurantsService {
 
   async getCategoryBySlug({
     slug,
+    page,
   }: GetCategoryInput): Promise<GetCategoryOutput> {
     try {
+      const category = await CategoryRepository(this.dataSource).findOneOrFail({
+        where: { slug },
+      });
+      const restaurants = await this.restaurantRepository.find({
+        where: { category: { id: category.id } },
+        take: PAGINATION_SIZE,
+        skip: (page - 1) * PAGINATION_SIZE,
+      });
+      category.restaurants = restaurants;
+      const totalResult = await this.countRestaurant(category);
       return {
         isOK: true,
-        category: await CategoryRepository(this.dataSource).findOneOrFail({
-          where: { slug },
-        }),
+        category,
+        totalPage: Math.ceil(totalResult / PAGINATION_SIZE),
       };
     } catch {
       return {
