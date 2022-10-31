@@ -19,6 +19,7 @@ import { Verification } from './users/entities/verification.entity';
 import { Restaurant } from './restaurant/entities/restaurants.entity';
 import { Category } from './restaurant/entities/category.entity';
 import { AuthModule } from './auth/auth.module';
+import { DataSource } from 'typeorm';
 
 @Module({
   imports: [
@@ -73,6 +74,7 @@ import { AuthModule } from './auth/auth.module';
   providers: [],
 })
 export class AppModule implements NestModule {
+  constructor(private dataSource: DataSource) {}
   configure(consumer: MiddlewareConsumer): any {
     consumer
       .apply(JwtMiddleware) //.exclude()
