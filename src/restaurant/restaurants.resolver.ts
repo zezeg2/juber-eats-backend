@@ -38,10 +38,6 @@ import {
   SearchRestaurantInput,
   SearchRestaurantOutput,
 } from './dtos/search-restaurant.dto';
-import { Dish } from './entities/dish.entity';
-import { CreateDishInput, CreateDishOutput } from './dtos/create-dish.dto';
-import { DeleteDishInput, DeleteDishOutput } from './dtos/delete-dish.dto';
-import { EditDishInput, EditDishOutput } from './dtos/edit-dish.dto';
 
 @Resolver(() => Restaurant)
 export class RestaurantsResolver {
@@ -94,7 +90,7 @@ export class RestaurantsResolver {
   async getRestaurant(
     @Args('input') getRestaurantInput: GetRestaurantInput,
   ): Promise<GetRestaurantOutput> {
-    return await this.restaurantsService.getRestaurantById(getRestaurantInput);
+    return await this.restaurantsService.findRestaurantById(getRestaurantInput);
   }
 
   @Query(() => SearchRestaurantOutput)
@@ -126,37 +122,5 @@ export class CategoryResolver {
     @Args('input') categoryInput: GetCategoryInput,
   ): Promise<GetCategoryOutput> {
     return await this.restaurantsService.getCategoryBySlug(categoryInput);
-  }
-}
-
-@Resolver(() => Dish)
-export class DishResolver {
-  constructor(private readonly restaurantsService: RestaurantsService) {}
-
-  @Mutation(() => CreateDishOutput)
-  @Role([UserRole.Owner])
-  async createDish(
-    @AuthUser() authUser: User,
-    @Args('input') createDishInput: CreateDishInput,
-  ): Promise<CreateDishOutput> {
-    return await this.restaurantsService.createDish(authUser, createDishInput);
-  }
-
-  @Mutation(() => DeleteDishOutput)
-  @Role([UserRole.Owner])
-  async deleteDish(
-    @AuthUser() authUser: User,
-    @Args('input') deleteDishInput: DeleteDishInput,
-  ): Promise<DeleteDishOutput> {
-    return await this.restaurantsService.deleteDish(authUser, deleteDishInput);
-  }
-
-  @Mutation(() => EditDishOutput)
-  @Role([UserRole.Owner])
-  async editDish(
-    @AuthUser() authUser: User,
-    @Args('input') editDishInput: EditDishInput,
-  ): Promise<EditDishOutput> {
-    return await this.restaurantsService.editDish(authUser, editDishInput);
   }
 }

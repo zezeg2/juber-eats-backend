@@ -20,7 +20,8 @@ import { Restaurant } from './restaurant/entities/restaurants.entity';
 import { Category } from './restaurant/entities/category.entity';
 import { AuthModule } from './auth/auth.module';
 import { DataSource } from 'typeorm';
-import { Dish } from './restaurant/entities/dish.entity';
+import { Dish } from './dish/dish.entity';
+import { DishModule } from './dish/dish.module';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { Dish } from './restaurant/entities/dish.entity';
       fromEmail: process.env.MAILGUN_FROM_EMAIL,
     }),
     AuthModule,
+    DishModule,
   ],
   controllers: [],
   providers: [],
