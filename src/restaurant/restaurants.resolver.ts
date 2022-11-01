@@ -26,6 +26,18 @@ import {
 import { Category } from './entities/category.entity';
 import { AllCategoriesOutput } from './dtos/all-categories.dto';
 import { GetCategoryInput, GetCategoryOutput } from './dtos/get-category.dto';
+import {
+  AllRestaurantsInput,
+  AllRestaurantsOutput,
+} from './dtos/all-restaurants.dto';
+import {
+  GetRestaurantInput,
+  GetRestaurantOutput,
+} from './dtos/get-restaurant.dto';
+import {
+  SearchRestaurantInput,
+  SearchRestaurantOutput,
+} from './dtos/search-restaurant.dto';
 
 @Resolver(() => Restaurant)
 export class RestaurantsResolver {
@@ -64,6 +76,29 @@ export class RestaurantsResolver {
     return await this.restaurantsService.deleteRestaurant(
       authUser,
       deleteRestaurantInput,
+    );
+  }
+
+  @Query(() => AllRestaurantsOutput)
+  async allRestaurants(
+    @Args('input') getRestaurantsInput: AllRestaurantsInput,
+  ): Promise<AllRestaurantsOutput> {
+    return await this.restaurantsService.allRestaurants(getRestaurantsInput);
+  }
+
+  @Query(() => GetRestaurantOutput)
+  async getRestaurant(
+    @Args('input') getRestaurantInput: GetRestaurantInput,
+  ): Promise<GetRestaurantOutput> {
+    return await this.restaurantsService.getRestaurantById(getRestaurantInput);
+  }
+
+  @Query(() => SearchRestaurantOutput)
+  async searchRestaurant(
+    @Args('input') searchRestaurantInput: SearchRestaurantInput,
+  ): Promise<SearchRestaurantOutput> {
+    return await this.restaurantsService.searchRestaurantByName(
+      searchRestaurantInput,
     );
   }
 }

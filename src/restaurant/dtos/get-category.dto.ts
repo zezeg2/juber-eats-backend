@@ -5,7 +5,6 @@ import {
   PaginationOutput,
 } from '../../common/dtos/pagination.dto';
 
-export const PAGINATION_SIZE = 5;
 @InputType()
 export class GetCategoryInput extends PaginationInput {
   @Field(() => String)
@@ -14,5 +13,5 @@ export class GetCategoryInput extends PaginationInput {
 @ObjectType()
 export class GetCategoryOutput extends PaginationOutput {
   @Field(() => Category, { nullable: true })
-  category?: Category;
+  result?: Category;
 }

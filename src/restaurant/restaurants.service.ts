@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Restaurant } from './entities/restaurants.entity';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, ILike, Repository } from 'typeorm';
 import {
   CreateRestaurantInput,
   CreateRestaurantOutput,
@@ -18,11 +18,20 @@ import {
   DeleteRestaurantOutput,
 } from './dtos/delete-restaurant.dto';
 import { AllCategoriesOutput } from './dtos/all-categories.dto';
+import { GetCategoryInput, GetCategoryOutput } from './dtos/get-category.dto';
+import { PAGINATION_SIZE } from '../common/dtos/pagination.dto';
 import {
-  GetCategoryInput,
-  GetCategoryOutput,
-  PAGINATION_SIZE,
-} from './dtos/get-category.dto';
+  AllRestaurantsInput,
+  AllRestaurantsOutput,
+} from './dtos/all-restaurants.dto';
+import {
+  GetRestaurantInput,
+  GetRestaurantOutput,
+} from './dtos/get-restaurant.dto';
+import {
+  SearchRestaurantInput,
+  SearchRestaurantOutput,
+} from './dtos/search-restaurant.dto';
 
 @Injectable()
 export class RestaurantsService {
@@ -151,16 +160,84 @@ export class RestaurantsService {
         skip: (page - 1) * PAGINATION_SIZE,
       });
       category.restaurants = restaurants;
-      const totalResult = await this.countRestaurant(category);
+      const totalCount = await this.countRestaurant(category);
       return {
         isOK: true,
-        category,
-        totalPage: Math.ceil(totalResult / PAGINATION_SIZE),
+        result: category,
+        totalCount,
+        totalPage: Math.ceil(totalCount / PAGINATION_SIZE),
       };
     } catch {
       return {
         isOK: false,
         error: 'Category Not found',
+      };
+    }
+  }
+
+  async allRestaurants({
+    page,
+  }: AllRestaurantsInput): Promise<AllRestaurantsOutput> {
+    try {
+      const [restaurants, totalCount] =
+        await this.restaurantRepository.findAndCount({
+          take: PAGINATION_SIZE,
+          skip: (page - 1) * PAGINATION_SIZE,
+        });
+      return {
+        isOK: true,
+        result: restaurants,
+        totalCount,
+        totalPage: Math.ceil(totalCount / PAGINATION_SIZE),
+      };
+    } catch {
+      return {
+        isOK: false,
+        error: 'Cannot load Restaurants',
+      };
+    }
+  }
+
+  async getRestaurantById({
+    restaurantId,
+  }: GetRestaurantInput): Promise<GetRestaurantOutput> {
+    try {
+      const restaurant = await this.restaurantRepository.findOneOrFail({
+        where: { id: restaurantId },
+      });
+      return {
+        isOK: true,
+        result: restaurant,
+      };
+    } catch {
+      return {
+        isOK: false,
+        error: 'Restaurant not found',
+      };
+    }
+  }
+
+  async searchRestaurantByName({
+    query,
+    page,
+  }: SearchRestaurantInput): Promise<SearchRestaurantOutput> {
+    try {
+      const [restaurants, totalCount] =
+        await this.restaurantRepository.findAndCount({
+          where: { name: ILike(`%${query}%`) },
+          take: PAGINATION_SIZE,
+          skip: (page - 1) * PAGINATION_SIZE,
+        });
+      return {
+        isOK: true,
+        result: restaurants,
+        totalCount,
+        totalPage: Math.ceil(totalCount / PAGINATION_SIZE),
+      };
+    } catch {
+      return {
+        isOK: false,
+        error: 'error',
       };
     }
   }
