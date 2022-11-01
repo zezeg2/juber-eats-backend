@@ -4,6 +4,29 @@ import { CoreEntity } from '../../common/entities/core.entity';
 import { IsString, Length } from 'class-validator';
 import { Restaurant } from './restaurants.entity';
 
+@InputType('DishChoiceInputType', { isAbstract: true })
+@ObjectType()
+class DishChoice {
+  @Field(() => String)
+  name: string;
+
+  @Field(() => Int, { nullable: true })
+  extraFee?: number;
+}
+
+@InputType('DishOptionInputType', { isAbstract: true })
+@ObjectType()
+class DishOption {
+  @Field(() => String)
+  name: string;
+
+  @Field(() => [DishChoice], { nullable: true })
+  choices?: DishChoice[];
+
+  @Field(() => Int, { nullable: true })
+  extraFee?: number;
+}
+
 @InputType('DishInputType', { isAbstract: true })
 @ObjectType()
 @Entity()
@@ -15,13 +38,12 @@ export class Dish extends CoreEntity {
   name: string;
 
   @Field(() => Int)
-  @IsString()
   @Column()
   price: number;
 
-  @Field(() => String)
+  @Field(() => String, { nullable: true })
   @IsString()
-  @Column()
+  @Column({ nullable: true })
   photo: string;
 
   @Field(() => String)
@@ -40,5 +62,7 @@ export class Dish extends CoreEntity {
   @RelationId((dish: Dish) => dish.restaurant)
   restaurantId: number;
 
-  // @Column({type: 'json'})
+  @Field(() => [DishOption], { nullable: true })
+  @Column({ type: 'json', nullable: true })
+  options?: DishOption[];
 }
