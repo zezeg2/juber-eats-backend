@@ -20,6 +20,7 @@ import { Restaurant } from './restaurant/entities/restaurants.entity';
 import { Category } from './restaurant/entities/category.entity';
 import { AuthModule } from './auth/auth.module';
 import { DataSource } from 'typeorm';
+import { Dish } from './restaurant/entities/dish.entity';
 
 @Module({
   imports: [
@@ -57,7 +58,7 @@ import { DataSource } from 'typeorm';
       logging: process.env.NODE_ENV === 'dev',
       synchronize: process.env.NODE_ENV !== 'prod',
       // entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-      entities: [User, Verification, Restaurant, Category],
+      entities: [User, Verification, Restaurant, Category, Dish],
     }),
     UsersModule,
     JwtModule.forRoot({
