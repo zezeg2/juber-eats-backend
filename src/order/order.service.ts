@@ -3,10 +3,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order } from './entities/order.entity';
 import { CreateOrderInput, CreateOrderOutput } from './dtos/create-order.dto';
-import { User } from '../users/entities/users.entity';
+import { User, UserRole } from '../users/entities/users.entity';
 import { Restaurant } from '../restaurant/entities/restaurants.entity';
 import { OrderDish } from './entities/order-dish.entity';
 import { Dish } from '../dish/dish.entity';
+import { GetOrdersOutput, GetOrdersInput } from './dtos/get-orders.dto';
+import { GetOrderInput, GetOrderOutput } from './dtos/get-order.dto';
 
 @Injectable()
 export class OrderService {
@@ -82,6 +84,78 @@ export class OrderService {
       return {
         isOK: false,
         error: 'Cannot create Order',
+      };
+    }
+  }
+
+  async getOrders(
+    user: User,
+    { status }: GetOrdersInput,
+  ): Promise<GetOrdersOutput> {
+    try {
+      let orders: Order[];
+      if (user.role === UserRole.Client) {
+        orders = await this.orderRepository.find({
+          where: { customer: { id: user.id }, ...(status && { status }) },
+        });
+      } else if (user.role === UserRole.Delivery) {
+        orders = await this.orderRepository.find({
+          where: { driver: { id: user.id }, ...(status && { status }) },
+        });
+      } else if (user.role === UserRole.Owner) {
+        orders = await this.restaurantRepository
+          .find({
+            where: { owner: { id: user.id } },
+            relations: ['orders'],
+          })
+          .then((result) =>
+            result
+              .map((restaurant) => restaurant.orders)
+              .flat(1)
+              .filter((order) => {
+                if (status) {
+                  return order.status === status;
+                }
+              }),
+          );
+      }
+      return {
+        isOK: true,
+        orders,
+      };
+    } catch (error) {
+      return {
+        isOK: false,
+        error: 'Cannot get orders',
+      };
+    }
+  }
+
+  async getOrder(
+    user: User,
+    { id: orderId }: GetOrderInput,
+  ): Promise<GetOrderOutput> {
+    try {
+      const order = await this.orderRepository.findOne({
+        where: { id: orderId },
+        relations: ['restaurant'],
+      });
+      if (!order) throw new Error('Order not found');
+      if (
+        order.customerId !== user.id &&
+        order.driverId !== user.id &&
+        order.restaurant.ownerId !== user.id
+      ) {
+        throw new Error('You cannot see that');
+      }
+      return {
+        isOK: true,
+        order,
+      };
+    } catch (error) {
+      return {
+        isOK: false,
+        error: error.message(),
       };
     }
   }

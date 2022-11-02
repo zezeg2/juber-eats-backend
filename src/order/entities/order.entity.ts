@@ -5,7 +5,14 @@ import {
   ObjectType,
   registerEnumType,
 } from '@nestjs/graphql';
-import { Column, Entity, JoinTable, ManyToOne, OneToMany } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinTable,
+  ManyToOne,
+  OneToMany,
+  RelationId,
+} from 'typeorm';
 import { CoreEntity } from '../../common/entities/core.entity';
 import { User } from '../../users/entities/users.entity';
 import { Restaurant } from '../../restaurant/entities/restaurants.entity';
@@ -58,4 +65,10 @@ export class Order extends CoreEntity {
   @Column({ type: 'enum', enum: OrderStatus, default: OrderStatus.PENDING })
   @IsEnum(OrderStatus)
   status: OrderStatus;
+
+  @RelationId((order: Order) => order.customer)
+  customerId: number;
+
+  @RelationId((order: Order) => order.driver)
+  driverId: number;
 }
