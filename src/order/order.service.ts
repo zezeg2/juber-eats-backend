@@ -1,14 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Order } from './entities/order.entity';
+import { Order, OrderStatus } from './entities/order.entity';
 import { CreateOrderInput, CreateOrderOutput } from './dtos/create-order.dto';
 import { User, UserRole } from '../users/entities/users.entity';
 import { Restaurant } from '../restaurant/entities/restaurants.entity';
 import { OrderDish } from './entities/order-dish.entity';
 import { Dish } from '../dish/dish.entity';
-import { GetOrdersOutput, GetOrdersInput } from './dtos/get-orders.dto';
+import { GetOrdersInput, GetOrdersOutput } from './dtos/get-orders.dto';
 import { GetOrderInput, GetOrderOutput } from './dtos/get-order.dto';
+import { EditOrderInput, EditOrderOutput } from './dtos/edit-order.dto';
 
 @Injectable()
 export class OrderService {
@@ -123,7 +124,7 @@ export class OrderService {
         isOK: true,
         orders,
       };
-    } catch (error) {
+    } catch {
       return {
         isOK: false,
         error: 'Cannot get orders',
@@ -131,32 +132,64 @@ export class OrderService {
     }
   }
 
+  async checkAndGetOrder(orderId: number, user: User): Promise<Order> {
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+      relations: ['restaurant'],
+    });
+    if (!order) throw new Error('Order not found');
+    if (
+      order.customerId !== user.id &&
+      order.driverId !== user.id &&
+      order.restaurant.ownerId !== user.id
+    ) {
+      throw new Error('You cannot see that');
+    }
+    return order;
+  }
+
   async getOrder(
     user: User,
     { id: orderId }: GetOrderInput,
   ): Promise<GetOrderOutput> {
     try {
-      const order = await this.orderRepository.findOne({
-        where: { id: orderId },
-        relations: ['restaurant'],
-      });
-      if (!order) throw new Error('Order not found');
-      if (
-        order.customerId !== user.id &&
-        order.driverId !== user.id &&
-        order.restaurant.ownerId !== user.id
-      ) {
-        throw new Error('You cannot see that');
-      }
+      const order = await this.checkAndGetOrder(orderId, user);
       return {
         isOK: true,
         order,
       };
     } catch (error) {
+      return { isOK: false, error: error.message };
+    }
+  }
+
+  async editOrder(
+    user: User,
+    { id: orderId, status }: EditOrderInput,
+  ): Promise<EditOrderOutput> {
+    try {
+      switch (user.role) {
+        case UserRole.Owner:
+          if (
+            status === OrderStatus.PICKUP ||
+            status === OrderStatus.DELIVERED
+          ) {
+            throw new Error('You cannot edit order');
+          }
+          break;
+        case UserRole.Delivery:
+          if (status === OrderStatus.ACCEPT || status === OrderStatus.COOKED) {
+            throw new Error('You cannot edit order');
+          }
+          break;
+      }
+      const order = await this.checkAndGetOrder(orderId, user);
+      await this.orderRepository.save({ ...order, ...(status && { status }) });
       return {
-        isOK: false,
-        error: error.message(),
+        isOK: true,
       };
+    } catch (error) {
+      return { isOK: false, error: error.message };
     }
   }
 }

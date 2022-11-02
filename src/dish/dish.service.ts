@@ -78,7 +78,7 @@ export class DishService {
     } catch (error) {
       return {
         isOK: false,
-        error: error.message(),
+        error: error.message,
       };
     }
   }
@@ -96,7 +96,7 @@ export class DishService {
     } catch (error) {
       return {
         isOK: false,
-        error: error.message(),
+        error: error.message,
       };
     }
   }

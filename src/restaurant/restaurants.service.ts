@@ -89,7 +89,7 @@ export class RestaurantsService {
     } catch (error) {
       return {
         isOK: false,
-        error: error.message(),
+        error: error.message,
       };
     }
   }
@@ -106,7 +106,7 @@ export class RestaurantsService {
     } catch (error) {
       return {
         isOK: false,
-        error: error.message(),
+        error: error.message,
       };
     }
   }

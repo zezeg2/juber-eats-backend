@@ -22,6 +22,7 @@ import { IsEnum } from 'class-validator';
 export enum OrderStatus {
   PENDING = 'PENDING',
   ACCEPT = 'ACCEPT',
+  COOKED = 'COOKED',
   PICKUP = 'PICKUP',
   DELIVERED = 'DELIVERED',
 }
