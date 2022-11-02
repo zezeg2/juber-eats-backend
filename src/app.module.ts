@@ -22,6 +22,9 @@ import { AuthModule } from './auth/auth.module';
 import { DataSource } from 'typeorm';
 import { Dish } from './dish/dish.entity';
 import { DishModule } from './dish/dish.module';
+import { OrderModule } from './order/orders.module';
+import { Order } from './order/entities/order.entity';
+import { OrderDish } from './order/entities/order-dish.entity';
 
 @Module({
   imports: [
@@ -59,7 +62,15 @@ import { DishModule } from './dish/dish.module';
       logging: process.env.NODE_ENV === 'dev',
       synchronize: process.env.NODE_ENV !== 'prod',
       // entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-      entities: [User, Verification, Restaurant, Category, Dish],
+      entities: [
+        User,
+        Verification,
+        Restaurant,
+        Category,
+        Dish,
+        Order,
+        OrderDish,
+      ],
     }),
     UsersModule,
     JwtModule.forRoot({
@@ -72,6 +83,7 @@ import { DishModule } from './dish/dish.module';
     }),
     AuthModule,
     DishModule,
+    OrderModule,
   ],
   controllers: [],
   providers: [],
