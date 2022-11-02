@@ -1,9 +1,4 @@
-import {
-  MiddlewareConsumer,
-  Module,
-  NestModule,
-  RequestMethod,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { RestaurantsModule } from './restaurant/restaurants.module';
@@ -11,7 +6,6 @@ import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
 import * as Joi from 'joi';
 import { JwtModule } from './jwt/jwt.module';
-import { JwtMiddleware } from './jwt/jwt.middleware';
 import { MailModule } from './mail/mail.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './users/entities/users.entity';
@@ -25,6 +19,9 @@ import { DishModule } from './dish/dish.module';
 import { OrderModule } from './order/orders.module';
 import { Order } from './order/entities/order.entity';
 import { OrderDish } from './order/entities/order-dish.entity';
+import { Context } from 'graphql-ws';
+
+const TOKEN_KEY = 'x-jwt';
 
 @Module({
   imports: [
@@ -46,10 +43,20 @@ import { OrderDish } from './order/entities/order-dish.entity';
       }),
     }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
+      subscriptions: {
+        'graphql-ws': {
+          onConnect: (context: Context<any, any>) => {
+            const { connectionParams, extra } = context;
+            console.log(context);
+            extra.token = connectionParams[TOKEN_KEY];
+          },
+        },
+      },
       driver: ApolloDriver,
-      // autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       autoSchemaFile: true,
-      context: ({ req }) => ({ user: req['user'] }),
+      context: ({ req, extra }) => {
+        return { token: req ? req.headers[TOKEN_KEY] : extra.token };
+      },
     }),
     RestaurantsModule,
     TypeOrmModule.forRoot({
@@ -88,11 +95,14 @@ import { OrderDish } from './order/entities/order-dish.entity';
   controllers: [],
   providers: [],
 })
-export class AppModule implements NestModule {
+// export class AppModule implements NestModule {
+//   constructor(private dataSource: DataSource) {}
+//   configure(consumer: MiddlewareConsumer): any {
+//     consumer
+//       .apply(JwtMiddleware) //.exclude()
+//       .forRoutes({ path: '*', method: RequestMethod.ALL });
+//   }
+// }
+export class AppModule {
   constructor(private dataSource: DataSource) {}
-  configure(consumer: MiddlewareConsumer): any {
-    consumer
-      .apply(JwtMiddleware) //.exclude()
-      .forRoutes({ path: '*', method: RequestMethod.ALL });
-  }
 }

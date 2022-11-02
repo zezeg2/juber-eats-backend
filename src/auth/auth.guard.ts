@@ -3,15 +3,19 @@
  * Guard 는 각기 다른 기능을 하는 Guard 를 다양하게 만들 수 있는 것이 장점.
  */
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import { Observable } from 'rxjs';
 import { GqlExecutionContext } from '@nestjs/graphql';
 import { Reflector } from '@nestjs/core';
 import { AllowedRoles } from './role.decorator';
-import { User } from '../users/entities/users.entity';
+import { JwtService } from '../jwt/jwt.service';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
+  ) {}
   /**
    * @param context Current execution context. Provides access to details about
    * the current request pipeline.
@@ -19,16 +23,25 @@ export class AuthGuard implements CanActivate {
    * @returns Value indicating whether or not the current request is allowed to
    * proceed.
    */
-  canActivate(
-    context: ExecutionContext,
-  ): boolean | Promise<boolean> | Observable<boolean> {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const roles = this.reflector.get<AllowedRoles>(
       'roles',
       context.getHandler(),
     );
     if (!roles) return true;
+    let user;
     const gqlContext = GqlExecutionContext.create(context).getContext();
-    const user: User = gqlContext['user'];
+    const token = gqlContext.req
+      ? gqlContext.req.headers['x-jwt']
+      : gqlContext.token;
+    const decoded = this.jwtService.verify(token);
+    try {
+      if (typeof decoded === 'object' && decoded.hasOwnProperty('id')) {
+        user = await this.usersService.findById(decoded['id']);
+      }
+    } catch (error) {
+      return false;
+    }
     if (!user) return false;
     if (roles.includes('Any')) return true;
     return roles.includes(user.role);
