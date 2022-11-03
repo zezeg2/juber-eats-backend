@@ -67,6 +67,9 @@ export class Order extends CoreEntity {
   @IsEnum(OrderStatus)
   status: OrderStatus;
 
+  @RelationId((order: Order) => order.restaurant)
+  restaurantId: number;
+
   @RelationId((order: Order) => order.customer)
   customerId: number;
 

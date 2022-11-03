@@ -5,16 +5,26 @@ import { CreateOrderInput, CreateOrderOutput } from './dtos/create-order.dto';
 import { AuthUser } from '../auth/auth-user.decorator';
 import { User, UserRole } from '../users/entities/users.entity';
 import { Role } from '../auth/role.decorator';
-import { GetOrdersOutput, GetOrdersInput } from './dtos/get-orders.dto';
+import { GetOrdersInput, GetOrdersOutput } from './dtos/get-orders.dto';
 import { GetOrderInput, GetOrderOutput } from './dtos/get-order.dto';
 import { EditOrderInput, EditOrderOutput } from './dtos/edit-order.dto';
 import { PubSub } from 'graphql-subscriptions';
-import { boolean } from 'joi';
+import { Inject } from '@nestjs/common';
+import {
+  NEW_ACCEPTED_ORDER,
+  NEW_COOKED_ORDER,
+  NEW_PENDING_ORDER,
+  GET_ORDER_STATE,
+  PUB_SUB,
+} from '../common/common.constants';
+import { GetOrderSubsInput } from './dtos/get-order-subs.dto';
 
-const pubsub = new PubSub();
 @Resolver(() => Order)
 export class OrderResolver {
-  constructor(private readonly orderService: OrderService) {}
+  constructor(
+    private readonly orderService: OrderService,
+    @Inject(PUB_SUB) private readonly pubSub: PubSub,
+  ) {}
 
   @Mutation(() => CreateOrderOutput)
   @Role([UserRole.Client])
@@ -52,15 +62,55 @@ export class OrderResolver {
     return await this.orderService.editOrder(user, editOrderInput);
   }
 
-  @Subscription(() => String)
-  @Role(['Any'])
-  orderSubscription(@AuthUser() user) {
-    console.log(user);
-    return pubsub.asyncIterator('hey-jh');
+  @Role([UserRole.Owner])
+  @Subscription(() => Order, {
+    filter: ({ ownerId }, _, { user }) => {
+      return ownerId === user.id;
+    },
+    resolve: ({ order }) => order,
+  })
+  pendingOrders() {
+    return this.pubSub.asyncIterator(NEW_PENDING_ORDER);
   }
-  @Mutation(() => Boolean)
-  ready() {
-    pubsub.publish('hey-jh', { orderSubscription: 'hey im ready' });
-    return true;
+
+  @Role([UserRole.Delivery, UserRole.Client])
+  @Subscription(() => Order, {
+    filter: ({ order }, _, { user }) => {
+      return user.role === UserRole.Delivery || user.id === order.customerId;
+    },
+    resolve: ({ order }) => order,
+  })
+  acceptedOrder() {
+    return this.pubSub.asyncIterator(NEW_ACCEPTED_ORDER);
+  }
+
+  @Role([UserRole.Delivery, UserRole.Client])
+  @Subscription(() => Order, {
+    filter: ({ order }, _, { user }) => {
+      return user.id === order.customerId || user.id === user.driverId;
+    },
+    resolve: ({ order }) => order,
+  })
+  cookedOrder() {
+    return this.pubSub.asyncIterator(NEW_COOKED_ORDER);
+  }
+
+  @Role(['Any'])
+  @Subscription(() => Order, {
+    filter: ({ order }, { input }, { user }) => {
+      if (
+        user.id !== order.customerId &&
+        user.id !== order.driverId &&
+        user.id !== order.restaurant.ownerId
+      ) {
+        return false;
+      }
+      if (!input.id) return true;
+      return order.id === input.id;
+    },
+    resolve: ({ order }) => order,
+  })
+  getOrderSubs(@Args('input') getOrderSubsInput: GetOrderSubsInput) {
+    return this.pubSub.asyncIterator(GET_ORDER_STATE);
   }
 }

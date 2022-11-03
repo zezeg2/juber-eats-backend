@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOneOptions, Repository } from 'typeorm';
 import { Order, OrderStatus } from './entities/order.entity';
 import { CreateOrderInput, CreateOrderOutput } from './dtos/create-order.dto';
 import { User, UserRole } from '../users/entities/users.entity';
@@ -10,6 +10,14 @@ import { Dish } from '../dish/dish.entity';
 import { GetOrdersInput, GetOrdersOutput } from './dtos/get-orders.dto';
 import { GetOrderInput, GetOrderOutput } from './dtos/get-order.dto';
 import { EditOrderInput, EditOrderOutput } from './dtos/edit-order.dto';
+import {
+  NEW_ACCEPTED_ORDER,
+  NEW_COOKED_ORDER,
+  NEW_PENDING_ORDER,
+  GET_ORDER_STATE,
+  PUB_SUB,
+} from '../common/common.constants';
+import { PubSub } from 'graphql-subscriptions';
 
 @Injectable()
 export class OrderService {
@@ -25,6 +33,8 @@ export class OrderService {
 
     @InjectRepository(Restaurant)
     private readonly restaurantRepository: Repository<Restaurant>,
+
+    @Inject(PUB_SUB) private readonly pubSub: PubSub,
   ) {}
 
   async createOrder(
@@ -38,7 +48,7 @@ export class OrderService {
       if (!restaurant) {
         throw Error('Restaurant not found');
       }
-      const order = await this.orderRepository.save(
+      let order = await this.orderRepository.save(
         this.orderRepository.create({ customer, restaurant }),
       );
       let orderPrice = 0;
@@ -78,6 +88,15 @@ export class OrderService {
         );
       }
       await this.orderRepository.save({ ...order, total: orderPrice });
+
+      order = await this.orderRepository.findOne({
+        where: { id: order.id },
+        relations: ['dishes.dish'],
+      });
+      await this.pubSub.publish(NEW_PENDING_ORDER, {
+        order,
+        ownerId: restaurant.ownerId,
+      });
       return {
         isOK: true,
       };
@@ -132,10 +151,18 @@ export class OrderService {
     }
   }
 
-  async checkAndGetOrder(orderId: number, user: User): Promise<Order> {
+  async checkAndGetOrder(
+    orderId: number,
+    user: User,
+    options?: FindOneOptions<Order>,
+  ): Promise<Order> {
+    options.relations;
     const order = await this.orderRepository.findOne({
-      where: { id: orderId },
-      relations: ['restaurant'],
+      ...options,
+      where: { id: orderId, ...options.where },
+      relations: options.relations
+        ? ['restaurant'].concat(options.relations as string[])
+        : ['restaurant'],
     });
     if (!order) throw new Error('Order not found');
     if (
@@ -143,7 +170,7 @@ export class OrderService {
       order.driverId !== user.id &&
       order.restaurant.ownerId !== user.id
     ) {
-      throw new Error('You cannot see that');
+      throw new Error('Permission Denied');
     }
     return order;
   }
@@ -183,8 +210,23 @@ export class OrderService {
           }
           break;
       }
-      const order = await this.checkAndGetOrder(orderId, user);
-      await this.orderRepository.save({ ...order, ...(status && { status }) });
+      let order = await this.checkAndGetOrder(orderId, user, {
+        relations: ['dishes.dish'],
+      });
+      order = await this.orderRepository.save({
+        ...order,
+        ...(status && { status }),
+      });
+      if (status === OrderStatus.ACCEPT) {
+        await this.pubSub.publish(NEW_ACCEPTED_ORDER, { order });
+      } else if (status === OrderStatus.COOKED) {
+        await this.pubSub.publish(NEW_COOKED_ORDER, { order });
+      } else {
+        await this.pubSub.publish(GET_ORDER_STATE, {
+          order,
+          ownerId: order.restaurant.ownerId,
+        });
+      }
       return {
         isOK: true,
       };

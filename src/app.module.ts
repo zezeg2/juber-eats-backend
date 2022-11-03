@@ -20,6 +20,7 @@ import { OrderModule } from './order/orders.module';
 import { Order } from './order/entities/order.entity';
 import { OrderDish } from './order/entities/order-dish.entity';
 import { Context } from 'graphql-ws';
+import { CommonModule } from './common/common.module';
 
 const TOKEN_KEY = 'x-jwt';
 
@@ -47,7 +48,6 @@ const TOKEN_KEY = 'x-jwt';
         'graphql-ws': {
           onConnect: (context: Context<any, any>) => {
             const { connectionParams, extra } = context;
-            console.log(context);
             extra.token = connectionParams[TOKEN_KEY];
           },
         },
@@ -79,6 +79,7 @@ const TOKEN_KEY = 'x-jwt';
         OrderDish,
       ],
     }),
+    CommonModule,
     UsersModule,
     JwtModule.forRoot({
       privateKey: process.env.PRIVATE_KEY,
