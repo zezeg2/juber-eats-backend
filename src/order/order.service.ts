@@ -11,13 +11,14 @@ import { GetOrdersInput, GetOrdersOutput } from './dtos/get-orders.dto';
 import { GetOrderInput, GetOrderOutput } from './dtos/get-order.dto';
 import { EditOrderInput, EditOrderOutput } from './dtos/edit-order.dto';
 import {
+  GET_ORDER_STATE,
   NEW_ACCEPTED_ORDER,
   NEW_COOKED_ORDER,
   NEW_PENDING_ORDER,
-  GET_ORDER_STATE,
   PUB_SUB,
 } from '../common/common.constants';
 import { PubSub } from 'graphql-subscriptions';
+import { TakeOrderInput, TakeOrderOutput } from './dtos/take-order.dto';
 
 @Injectable()
 export class OrderService {
@@ -221,17 +222,39 @@ export class OrderService {
         await this.pubSub.publish(NEW_ACCEPTED_ORDER, { order });
       } else if (status === OrderStatus.COOKED) {
         await this.pubSub.publish(NEW_COOKED_ORDER, { order });
-      } else {
-        await this.pubSub.publish(GET_ORDER_STATE, {
-          order,
-          ownerId: order.restaurant.ownerId,
-        });
       }
+      await this.pubSub.publish(GET_ORDER_STATE, { order });
       return {
         isOK: true,
       };
     } catch (error) {
       return { isOK: false, error: error.message };
+    }
+  }
+
+  async takeOrder(
+    driver: User,
+    { id: orderId }: TakeOrderInput,
+  ): Promise<TakeOrderOutput> {
+    try {
+      let order = await this.orderRepository.findOne({
+        where: { id: orderId },
+        relations: ['restaurant', 'dishes.dish', 'driver'],
+      });
+      if (!order) throw new Error('Order not found');
+      if (order.status === OrderStatus.PENDING)
+        throw new Error('Not Accepted Order');
+      if (order.driver) throw new Error('Already taken order');
+      order = await this.orderRepository.save({ ...order, driver });
+      await this.pubSub.publish(GET_ORDER_STATE, { order });
+      return {
+        isOK: true,
+      };
+    } catch (error) {
+      return {
+        isOK: false,
+        error: error.message,
+      };
     }
   }
 }

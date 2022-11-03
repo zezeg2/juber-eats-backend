@@ -18,6 +18,7 @@ import {
   PUB_SUB,
 } from '../common/common.constants';
 import { GetOrderSubsInput } from './dtos/get-order-subs.dto';
+import { TakeOrderInput, TakeOrderOutput } from './dtos/take-order.dto';
 
 @Resolver(() => Order)
 export class OrderResolver {
@@ -112,5 +113,14 @@ export class OrderResolver {
   })
   getOrderSubs(@Args('input') getOrderSubsInput: GetOrderSubsInput) {
     return this.pubSub.asyncIterator(GET_ORDER_STATE);
+  }
+
+  @Mutation(() => TakeOrderOutput)
+  @Role([UserRole.Delivery])
+  async takeOrder(
+    @AuthUser() user: User,
+    @Args('input') takeOrderInput: TakeOrderInput,
+  ): Promise<TakeOrderOutput> {
+    return await this.orderService.takeOrder(user, takeOrderInput);
   }
 }
