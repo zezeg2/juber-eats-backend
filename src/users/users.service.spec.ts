@@ -6,7 +6,7 @@ import { Repository } from 'typeorm';
 
 import { Verification } from './entities/verification.entity';
 import { UsersService } from './users.service';
-import { User } from './entities/users.entity';
+import { User, UserRole } from './entities/users.entity';
 
 const mockRepository = () => ({
   findOne: jest.fn(),
@@ -86,7 +86,7 @@ describe('UserService', () => {
     const createAccountArgs = {
       email: 'bs@email.com',
       password: 'bs.password',
-      role: 0,
+      role: UserRole.Client,
     };
 
     it('should fail if user exists', async () => {

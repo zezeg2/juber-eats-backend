@@ -1,24 +1,28 @@
-import {
-  MiddlewareConsumer,
-  Module,
-  NestModule,
-  RequestMethod,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { RestaurantsModule } from './restaurant/restaurants.module';
-import { DatabaseModule } from './database/database.module';
 import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
 import * as Joi from 'joi';
 import { JwtModule } from './jwt/jwt.module';
-import { JwtMiddleware } from './jwt/jwt.middleware';
-import { join } from 'path';
 import { MailModule } from './mail/mail.module';
-import * as domain from 'domain';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './users/entities/users.entity';
 import { Verification } from './users/entities/verification.entity';
+import { Restaurant } from './restaurant/entities/restaurants.entity';
+import { Category } from './restaurant/entities/category.entity';
+import { AuthModule } from './auth/auth.module';
+import { DataSource } from 'typeorm';
+import { Dish } from './dish/dish.entity';
+import { DishModule } from './dish/dish.module';
+import { OrderModule } from './order/orders.module';
+import { Order } from './order/entities/order.entity';
+import { OrderDish } from './order/entities/order-dish.entity';
+import { Context } from 'graphql-ws';
+import { CommonModule } from './common/common.module';
+
+const TOKEN_KEY = 'x-jwt';
 
 @Module({
   imports: [
@@ -40,10 +44,19 @@ import { Verification } from './users/entities/verification.entity';
       }),
     }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
+      subscriptions: {
+        'graphql-ws': {
+          onConnect: (context: Context<any, any>) => {
+            const { connectionParams, extra } = context;
+            extra.token = connectionParams[TOKEN_KEY];
+          },
+        },
+      },
       driver: ApolloDriver,
-      // autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       autoSchemaFile: true,
-      context: ({ req }) => ({ user: req['user'] }),
+      context: ({ req, extra }) => {
+        return { token: req ? req.headers[TOKEN_KEY] : extra.token };
+      },
     }),
     RestaurantsModule,
     TypeOrmModule.forRoot({
@@ -53,11 +66,20 @@ import { Verification } from './users/entities/verification.entity';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      logging: process.env.NODE_ENV !== 'production',
-      synchronize: process.env.NODE_ENV !== 'production',
+      logging: process.env.NODE_ENV === 'dev',
+      synchronize: process.env.NODE_ENV !== 'prod',
       // entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-      entities: [User, Verification],
+      entities: [
+        User,
+        Verification,
+        Restaurant,
+        Category,
+        Dish,
+        Order,
+        OrderDish,
+      ],
     }),
+    CommonModule,
     UsersModule,
     JwtModule.forRoot({
       privateKey: process.env.PRIVATE_KEY,
@@ -67,15 +89,21 @@ import { Verification } from './users/entities/verification.entity';
       domain: process.env.MAILGUN_DOMAIN_NAME,
       fromEmail: process.env.MAILGUN_FROM_EMAIL,
     }),
+    AuthModule,
+    DishModule,
+    OrderModule,
   ],
   controllers: [],
   providers: [],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer): any {
-    consumer
-      .apply(JwtMiddleware) //.exclude()
-      .forRoutes({ path: '*', method: RequestMethod.ALL });
-  }
-  // export class AppModule {}
+// export class AppModule implements NestModule {
+//   constructor(private dataSource: DataSource) {}
+//   configure(consumer: MiddlewareConsumer): any {
+//     consumer
+//       .apply(JwtMiddleware) //.exclude()
+//       .forRoutes({ path: '*', method: RequestMethod.ALL });
+//   }
+// }
+export class AppModule {
+  constructor(private dataSource: DataSource) {}
 }

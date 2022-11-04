@@ -80,7 +80,7 @@ export class UsersService {
       if (!user) throw Error('Not Found User');
       return {
         isOK: Boolean(user),
-        user,
+        profile: user,
       };
     } catch (error) {
       return {
@@ -101,6 +101,7 @@ export class UsersService {
       if (email) {
         user.email = email;
         user.verified = false;
+        await this.verificationRepository.delete({ user: { id: user.id } });
         const verification = await this.verificationRepository.save(
           this.verificationRepository.create({ user }),
         );
@@ -108,10 +109,11 @@ export class UsersService {
       }
       if (password) {
         user.password = password;
-        await this.usersRepository.save(user);
-        return { isOK: true };
       }
+      await this.usersRepository.save(user);
+      return { isOK: true };
     } catch (error) {
+      console.log(error);
       return { isOK: false, error: 'Not Found User' };
     }
   }

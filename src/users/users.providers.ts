@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { Restaurant } from '../restaurant/restaurants.entity';
+import { Restaurant } from '../restaurant/entities/restaurants.entity';
 import { User } from './entities/users.entity';
 import { Verification } from './entities/verification.entity';
 

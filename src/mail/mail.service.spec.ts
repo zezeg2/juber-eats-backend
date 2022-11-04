@@ -35,7 +35,7 @@ describe('MailService', () => {
 
   describe('sendEmail', () => {
     it('sends email', async () => {
-      const ok = await service.sendEmail('', '', [
+      const result = await service.sendEmail('', '', [
         { key: 'v:email', value: 'email' },
         { key: 'v:code', value: 'code' },
       ]);
@@ -46,14 +46,14 @@ describe('MailService', () => {
         `https://api.mailgun.net/v3/${TEST_DOMAIN}/messages`,
         expect.any(Object),
       );
-      expect(ok).toEqual(true);
+      expect(result).toEqual(true);
     });
     it('fails on error', async () => {
       jest.spyOn(got, 'post').mockImplementation(() => {
         throw new Error();
       });
-      const ok = await service.sendEmail('', '', []);
-      expect(ok).toEqual(false);
+      const result = await service.sendEmail('', '', []);
+      expect(result).toEqual(false);
     });
   });
 
