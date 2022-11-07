@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from '../src/users/entities/users.entity';
 import { AppModule } from '../src/app.module';
@@ -22,6 +22,7 @@ const testUser = {
 };
 
 describe('UserModule (e2e)', () => {
+  let dataSource: DataSource;
   let app: INestApplication;
   let usersRepository: Repository<User>;
   let verificationRepository: Repository<Verification>;
@@ -32,6 +33,7 @@ describe('UserModule (e2e)', () => {
       imports: [AppModule],
     }).compile();
     app = module.createNestApplication();
+    dataSource = module.get(DataSource);
     usersRepository = module.get<Repository<User>>(getRepositoryToken(User));
     verificationRepository = module.get<Repository<Verification>>(
       getRepositoryToken(Verification),

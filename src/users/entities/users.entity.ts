@@ -11,6 +11,7 @@ import { InternalServerErrorException } from '@nestjs/common';
 import { IsBoolean, IsEmail, IsEnum, IsString, Length } from 'class-validator';
 import { Restaurant } from '../../restaurant/entities/restaurants.entity';
 import { Order } from '../../order/entities/order.entity';
+import { Payment } from '../../payment/entities/payment.entity';
 
 export enum UserRole {
   Owner = 'Owner',
@@ -60,6 +61,10 @@ export class User extends CoreEntity {
   @OneToMany(() => Order, (order) => order.driver, { nullable: true })
   @Field(() => [Order], { nullable: true })
   accepted: Order[];
+
+  @OneToMany(() => Payment, (payment) => payment.user, { nullable: true })
+  @Field(() => [Payment], { nullable: true })
+  payments: Payment[];
 
   @BeforeInsert()
   @BeforeUpdate()
