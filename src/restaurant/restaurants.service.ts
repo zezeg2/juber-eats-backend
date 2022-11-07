@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { Restaurant } from './entities/restaurants.entity';
-import { DataSource, ILike, Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import {
   CreateRestaurantInput,
   CreateRestaurantOutput,
 } from './dtos/create-restaurant.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from '../users/entities/users.entity';
 import {
   EditRestaurantInput,
   EditRestaurantOutput,
@@ -37,26 +36,26 @@ import { Dish } from '../dish/dish.entity';
 @Injectable()
 export class RestaurantsService {
   constructor(
-    private readonly dataSource: DataSource,
     @InjectRepository(Restaurant)
     private readonly restaurantRepository: Repository<Restaurant>,
     @InjectRepository(Dish)
     private readonly dishRepository: Repository<Dish>,
+    private readonly categoryRepository: CategoryRepository,
   ) {}
 
   async createRestaurant(
-    owner: User,
+    ownerId: number,
     createRestaurantInput: CreateRestaurantInput,
   ): Promise<CreateRestaurantOutput> {
     const newRestaurant = this.restaurantRepository.create(
       createRestaurantInput,
     );
-    newRestaurant.owner = owner;
-    const category = await CategoryRepository(this.dataSource).getOrCreate(
-      createRestaurantInput.categoryName,
-    );
-    newRestaurant.category = category;
+    newRestaurant.ownerId = ownerId;
     try {
+      const category = await this.categoryRepository.getOrCreate(
+        createRestaurantInput.categoryName,
+      );
+      newRestaurant.category = category;
       await this.restaurantRepository.save(newRestaurant);
       return { isOK: true };
     } catch {
@@ -65,14 +64,14 @@ export class RestaurantsService {
   }
 
   async editRestaurant(
-    owner: User,
+    ownerId: number,
     editRestaurantInput: EditRestaurantInput,
   ): Promise<EditRestaurantOutput> {
     try {
-      await this.checkRestaurant(editRestaurantInput.restaurantId, owner.id);
+      await this.checkRestaurant(editRestaurantInput.restaurantId, ownerId);
       let category: Category = null;
       if (editRestaurantInput.categoryName) {
-        category = await CategoryRepository(this.dataSource).getOrCreate(
+        category = await this.categoryRepository.getOrCreate(
           editRestaurantInput.categoryName,
         );
       }
@@ -95,14 +94,15 @@ export class RestaurantsService {
   }
 
   async deleteRestaurant(
-    owner: User,
+    ownerId: number,
     deleteRestaurantInput: DeleteRestaurantInput,
   ): Promise<DeleteRestaurantOutput> {
     try {
-      await this.checkRestaurant(deleteRestaurantInput.restaurantId, owner.id);
+      await this.checkRestaurant(deleteRestaurantInput.restaurantId, ownerId);
       await this.restaurantRepository.delete(
         deleteRestaurantInput.restaurantId,
       );
+      return { isOK: true };
     } catch (error) {
       return {
         isOK: false,
@@ -125,7 +125,7 @@ export class RestaurantsService {
 
   async allCategories(): Promise<AllCategoriesOutput> {
     try {
-      const categories = await CategoryRepository(this.dataSource).find();
+      const categories = await this.categoryRepository.find();
       return {
         isOK: true,
         categories,
@@ -138,9 +138,9 @@ export class RestaurantsService {
     }
   }
 
-  async countRestaurant(category: Category): Promise<number> {
+  async countRestaurant(categoryId: number): Promise<number> {
     return await this.restaurantRepository.count({
-      where: { category: { id: category.id } },
+      where: { category: { id: categoryId } },
     });
   }
   async getCategoryBySlug({
@@ -148,7 +148,7 @@ export class RestaurantsService {
     page,
   }: GetCategoryInput): Promise<GetCategoryOutput> {
     try {
-      const category = await CategoryRepository(this.dataSource).findOne({
+      const category = await this.categoryRepository.findOne({
         where: { slug },
       });
       if (!category) {

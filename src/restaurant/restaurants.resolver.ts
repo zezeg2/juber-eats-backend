@@ -50,7 +50,7 @@ export class RestaurantsResolver {
     @Args('input') createRestaurantInput: CreateRestaurantInput,
   ): Promise<CreateRestaurantOutput> {
     return await this.restaurantsService.createRestaurant(
-      authUser,
+      authUser.id,
       createRestaurantInput,
     );
   }
@@ -62,7 +62,7 @@ export class RestaurantsResolver {
     @Args('input') editRestaurantInput: EditRestaurantInput,
   ): Promise<EditRestaurantOutput> {
     return await this.restaurantsService.editRestaurant(
-      authUser,
+      authUser.id,
       editRestaurantInput,
     );
   }
@@ -74,7 +74,7 @@ export class RestaurantsResolver {
     @Args('input') deleteRestaurantInput: DeleteRestaurantInput,
   ): Promise<DeleteRestaurantOutput> {
     return await this.restaurantsService.deleteRestaurant(
-      authUser,
+      authUser.id,
       deleteRestaurantInput,
     );
   }
@@ -109,7 +109,7 @@ export class CategoryResolver {
 
   @ResolveField(() => Number)
   restaurantCount(@Parent() category: Category): Promise<number> {
-    return this.restaurantsService.countRestaurant(category);
+    return this.restaurantsService.countRestaurant(category.id);
   }
 
   @Query(() => AllCategoriesOutput)

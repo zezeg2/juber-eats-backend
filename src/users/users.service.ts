@@ -113,7 +113,6 @@ export class UsersService {
       await this.usersRepository.save(user);
       return { isOK: true };
     } catch (error) {
-      console.log(error);
       return { isOK: false, error: 'Not Found User' };
     }
   }

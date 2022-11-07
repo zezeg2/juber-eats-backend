@@ -24,6 +24,8 @@ import { CommonModule } from './common/common.module';
 import { PaymentModule } from './payment/payment.module';
 import { Payment } from './payment/entities/payment.entity';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ExtendsRepositoryModule } from './common/extends-repository.module';
+import { CategoryRepository } from './restaurant/repositories/category.repository';
 
 const TOKEN_KEY = 'x-jwt';
 
@@ -83,6 +85,7 @@ const TOKEN_KEY = 'x-jwt';
         Payment,
       ],
     }),
+    ExtendsRepositoryModule.forCustomRepository([CategoryRepository]),
     ScheduleModule.forRoot(),
     CommonModule,
     UsersModule,
@@ -111,5 +114,5 @@ const TOKEN_KEY = 'x-jwt';
 //   }
 // }
 export class AppModule {
-  constructor(private dataSource: DataSource) {}
+  constructor(public dataSource: DataSource) {}
 }

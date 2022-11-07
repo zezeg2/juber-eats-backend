@@ -209,7 +209,7 @@ describe('UserService', () => {
       expect(usersRepository.findOne).toHaveBeenCalledWith({
         where: { id: getUserProfileArgs.userId },
       });
-      expect(result).toEqual({ isOK: true, user: userProfile });
+      expect(result).toEqual({ isOK: true, profile: userProfile });
     });
 
     it('should fail if user not exists', async () => {

@@ -50,21 +50,23 @@ export class User extends CoreEntity {
   @Column({ default: false })
   verified: boolean;
 
-  @OneToMany(() => Restaurant, (restaurant) => restaurant.owner)
-  @Field(() => [Restaurant])
-  restaurants: Restaurant[];
+  @OneToMany(() => Restaurant, (restaurant) => restaurant.owner, {
+    nullable: true,
+  })
+  @Field(() => [Restaurant], { nullable: true })
+  restaurants?: Restaurant[];
 
   @OneToMany(() => Order, (order) => order.customer, { nullable: true })
   @Field(() => [Order], { nullable: true })
-  orders: Order[];
+  orders?: Order[];
 
   @OneToMany(() => Order, (order) => order.driver, { nullable: true })
   @Field(() => [Order], { nullable: true })
-  accepted: Order[];
+  accepted?: Order[];
 
   @OneToMany(() => Payment, (payment) => payment.user, { nullable: true })
   @Field(() => [Payment], { nullable: true })
-  payments: Payment[];
+  payments?: Payment[];
 
   @BeforeInsert()
   @BeforeUpdate()
