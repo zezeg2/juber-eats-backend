@@ -23,6 +23,7 @@ import { Context } from 'graphql-ws';
 import { CommonModule } from './common/common.module';
 import { PaymentModule } from './payment/payment.module';
 import { Payment } from './payment/entities/payment.entity';
+import { ScheduleModule } from '@nestjs/schedule';
 
 const TOKEN_KEY = 'x-jwt';
 
@@ -82,6 +83,7 @@ const TOKEN_KEY = 'x-jwt';
         Payment,
       ],
     }),
+    ScheduleModule.forRoot(),
     CommonModule,
     UsersModule,
     JwtModule.forRoot({

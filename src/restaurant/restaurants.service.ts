@@ -162,6 +162,9 @@ export class RestaurantsService {
           where: { category: { id: category.id } },
           take: PAGINATION_SIZE,
           skip: (page - 1) * PAGINATION_SIZE,
+          order: {
+            isPromoted: 'DESC',
+          },
         });
       category.restaurants = restaurants;
       return {
@@ -186,6 +189,9 @@ export class RestaurantsService {
         await this.restaurantRepository.findAndCount({
           take: PAGINATION_SIZE,
           skip: (page - 1) * PAGINATION_SIZE,
+          order: {
+            isPromoted: 'DESC',
+          },
         });
       return {
         isOK: true,
@@ -237,6 +243,9 @@ export class RestaurantsService {
           where: { name: ILike(`%${query}%`) },
           take: PAGINATION_SIZE,
           skip: (page - 1) * PAGINATION_SIZE,
+          order: {
+            isPromoted: 'DESC',
+          },
         });
       return {
         isOK: true,

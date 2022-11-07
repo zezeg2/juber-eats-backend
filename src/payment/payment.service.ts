@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Payment } from './entities/payment.entity';
-import { Repository } from 'typeorm';
+import { LessThan, Repository } from 'typeorm';
 import {
   CreatePaymentInput,
   CreatePaymentOutput,
@@ -9,6 +9,8 @@ import {
 import { User } from '../users/entities/users.entity';
 import { Restaurant } from '../restaurant/entities/restaurants.entity';
 import { GetPaymentsOutput } from './dtos/get-payments.dto';
+import { Cron, SchedulerRegistry } from '@nestjs/schedule';
+import { when } from 'joi';
 
 @Injectable()
 export class PaymentService {
@@ -17,6 +19,7 @@ export class PaymentService {
     private readonly paymentRepository: Repository<Payment>,
     @InjectRepository(Restaurant)
     private readonly restaurantRepository: Repository<Restaurant>,
+    private readonly schedulerRegistry: SchedulerRegistry,
   ) {}
 
   async createPayment(
@@ -30,6 +33,7 @@ export class PaymentService {
       if (!restaurant) throw new Error('Restaurant not found');
       if (restaurant.ownerId !== owner.id)
         throw new Error('You cannot do this');
+
       await this.paymentRepository.save(
         this.paymentRepository.create({
           transactionId,
@@ -37,6 +41,12 @@ export class PaymentService {
           restaurant,
         }),
       );
+      restaurant.isPromoted = true;
+      const date = new Date();
+      date.setDate(date.getDate() + 7);
+      restaurant.promotedUntil = date;
+
+      await this.restaurantRepository.save(restaurant);
       return {
         isOK: true,
       };
@@ -62,6 +72,18 @@ export class PaymentService {
         isOK: false,
         error: 'Cannot load payments',
       };
+    }
+  }
+
+  @Cron('* * 0 * * *')
+  async checkPromotedRestaurants() {
+    const restaurants = await this.restaurantRepository.find({
+      where: { isPromoted: true, promotedUntil: LessThan(new Date()) },
+    });
+    for (const restaurant of restaurants) {
+      restaurant.isPromoted = false;
+      restaurant.promotedUntil = null;
+      await this.restaurantRepository.save(restaurant);
     }
   }
 }
