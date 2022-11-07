@@ -21,6 +21,8 @@ import { Order } from './order/entities/order.entity';
 import { OrderDish } from './order/entities/order-dish.entity';
 import { Context } from 'graphql-ws';
 import { CommonModule } from './common/common.module';
+import { PaymentModule } from './payment/payment.module';
+import { Payment } from './payment/entities/payment.entity';
 
 const TOKEN_KEY = 'x-jwt';
 
@@ -77,6 +79,7 @@ const TOKEN_KEY = 'x-jwt';
         Dish,
         Order,
         OrderDish,
+        Payment,
       ],
     }),
     CommonModule,
@@ -92,6 +95,7 @@ const TOKEN_KEY = 'x-jwt';
     AuthModule,
     DishModule,
     OrderModule,
+    PaymentModule,
   ],
   controllers: [],
   providers: [],
